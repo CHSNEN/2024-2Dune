@@ -30,9 +30,6 @@ void display(
 	display_resource(resource);
 	display_map(map);
 	display_cursor(cursor);
-	display_system_message(system_message);
-	display_object_info(map, cursor);
-	display_commands();
 }
 
 void display_resource(RESOURCE resource) {
