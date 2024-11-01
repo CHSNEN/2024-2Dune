@@ -7,11 +7,36 @@
 
 #include "display.h"
 #include "io.h"
+#include <time.h> // 커서 이동 함수용
 
 // 출력할 내용들의 좌상단(topleft) 좌표
 const POSITION resource_pos = { 0, 0 };
 const POSITION map_pos = { 1, 0 };
 
+// 2) 커서 & 상태창 - 방향키 이동 처리
+POSITION pmove(POSITION cur, DIRECTION dir) {
+	POSITION move_vector = dtop(dir);
+	return padd(cur, move_vector);
+
+	POSITION new_pos = cur;
+	switch (dir) {
+		case d_up:
+			new_pos.row -= 1;
+			break;
+		case d_down:
+			new_pos.row += 1;
+			break;
+		case d_left:
+			new_pos.column -= 1;
+			break;
+		case d_right:
+			new_pos.column += 1;
+			break;
+		default:
+			break;
+	}
+	return new_pos;
+}
 
 char backbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
 char frontbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
@@ -20,9 +45,10 @@ void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP
 void display_resource(RESOURCE resource);
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void display_cursor(CURSOR cursor);
-void display_system_message(const char* system_message);
-void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor);
-void display_commands();
+
+void display_system_message(POSITION map_pos, const char* system_message);
+void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION resource_pos);
+void display_commands(POSITION map_pos);
 void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 
 
@@ -35,9 +61,9 @@ void display(
 	display_map(map);
 	display_cursor(cursor);
 
-	display_system_message(system_message);
-	display_object_info(map, cursor);
-	display_commands();
+	display_system_message(map_pos, system_message);
+	display_object_info(map, cursor, resource_pos);
+	display_commands(map_pos);
 
 	init_map(map);
 }
@@ -93,21 +119,21 @@ void display_cursor(CURSOR cursor) {
 // 1) 준비 - 시스템 메시지 표시 함수 + 초기 메시지
 char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
 
-void display_system_message(const char* system_message) {
-	gotoxy(MAP_HEIGHT + 2, 0);
+void display_system_message(POSITION map_pos, const char* system_message) {
+	gotoxy(map_pos);
 	printf("System: %s\n", system_message);
 }
 
 // 1) 준비 - 상태창 함수
-void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor) {
+void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION resource_pos) {
 	char selected = map[1][cursor.current.row][cursor.current.column];
-	gotoxy(0, MAP_WIDTH + 5);
+	gotoxy(resource_pos);
 	printf("Selected Object>> %c\n", selected);
 }
 
 // 1) 준비 - 명령창 함수
-void display_commands() {
-	gotoxy(MAP_HEIGHT + 2, MAP_WIDTH + 5);
+void display_commands(POSITION map_pos) {
+	gotoxy(map_pos);
 	printf("Choose the commands number>> 1. Move  2. Attack  3. Harvest\n");
 }
 
@@ -162,4 +188,63 @@ void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	map[0][3][8] = 'R';
 }
 
+// 2) 커서 & 상태창 - 방향키 입력 및 이동 함수
+void move_cursor(KEY key) {
+	DIRECTION dir;
 
+	switch (key) {
+		case k_up:
+			dir = d_up;
+			break;
+		case k_down:
+			dir = d_down;
+			break;
+		case k_left:
+			dir = d_left;
+			break;
+		case k_right:
+			dir = d_right;
+			break;
+		default:
+			dir = d_stay;
+			break;
+	}
+}
+
+// 2) 커서 & 상태창 - 방향키 더블클릭 함수
+void double_cursor(DIRECTION dir, CURSOR* cursor) {
+	static clock_t last_click = 0;
+	clock_t cur_time = clock();
+
+	// 방향키 더블 이동
+	int step = 1;
+	if ((cur_time - last_click) < CLOCKS_PER_SEC / 2) {
+		step = 2;
+	}
+	last_click = cur_time;
+
+	// 커서 이동
+	for (int i = 0; i < step; i++) {
+		cursor_move(dir);
+	}
+
+	// 객체 정보 업데이트
+	display_object_info(map, *cursor, resource_pos);
+}
+
+// 2) 커서 & 상태창 - 선택 함수
+void select_object(CURSOR cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	char selected = map[0][cursor.current.row][cursor.current.column];
+	display_object_info(map, cursor, resource_pos);
+
+	const char* system_message = "오브젝트 선택";
+	display_system_message(system_message);
+}
+
+// 2) 커서 & 상태창 - 취소 함수
+void deselect_object() {
+	display_object_info(NULL, (CURSOR) { 0, 0 }, resource_pos);
+
+	const char* system_mesage = "선택을 취소합니다.";
+	display_system_message(system_message);
+}
