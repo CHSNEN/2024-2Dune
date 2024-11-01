@@ -20,6 +20,10 @@ void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP
 void display_resource(RESOURCE resource);
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void display_cursor(CURSOR cursor);
+void display_system_message(const char* system_message);
+void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor);
+void display_commands();
+void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 
 
 void display(
@@ -30,6 +34,12 @@ void display(
 	display_resource(resource);
 	display_map(map);
 	display_cursor(cursor);
+
+	display_system_message(system_message);
+	display_object_info(map, cursor);
+	display_commands();
+
+	init_map(map);
 }
 
 void display_resource(RESOURCE resource) {
@@ -84,19 +94,72 @@ void display_cursor(CURSOR cursor) {
 char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
 
 void display_system_message(const char* system_message) {
-	placed(MAP_HEIGHT + 2, 0);
+	gotoxy(MAP_HEIGHT + 2, 0);
 	printf("System: %s\n", system_message);
 }
 
 // 1) 준비 - 상태창 함수
-void display_object_info(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor) {
-	char selected = src[1][cursor.current.row][cursor.current.column];
-	placed(0, MAP_WIDTH + 5);
-	printf("Selected Object>> %s\n", selected);
+void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor) {
+	char selected = map[1][cursor.current.row][cursor.current.column];
+	gotoxy(0, MAP_WIDTH + 5);
+	printf("Selected Object>> %c\n", selected);
 }
 
 // 1) 준비 - 명령창 함수
 void display_commands() {
-	placed(MAP_HEIGHT + 2, MAP_WIDTH + 5);
+	gotoxy(MAP_HEIGHT + 2, MAP_WIDTH + 5);
 	printf("Choose the commands number>> 1. Move  2. Attack  3. Harvest\n");
 }
+
+// 1) 준비 - 초기 상태 초기 배치 함수
+void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	// 사막: 기본 지형(빈 칸)
+	for (int i = 0; i < MAP_HEIGHT; i++) {
+		for (int j = 0; j < MAP_WIDTH; j++) {
+			map[0][i][j] = ' ';
+		}
+	}
+
+	// 건물, 지형(B, P, S, R)은 layer 0
+	// 유닛(H, W)은 layer 1
+	
+	// 아트레이디스 본진, 장판, 하베스터
+	for (int i = MAP_HEIGHT - 3; i < MAP_HEIGHT - 1; i++) {
+		for (int j = 1; j <= 2; j++) {
+			if (i == MAP_HEIGHT - 3 && j == 1) {
+				map[0][i][j] = 'B';
+			}
+			else {
+				map[0][i][j] = 'P';
+			}
+		}
+	}
+	map[1][MAP_HEIGHT - 2][1] = 'H';
+
+	// 하코넨 본진, 장판, 하베스터
+	for (int i = 1; i <= 2; i++) {
+		for (int j = MAP_WIDTH - 3; j < MAP_WIDTH - 1; j++) {
+			if (i == 1 && j == MAP_WIDTH - 3) {
+				map[0][i][j] = 'B';
+			}
+			else {
+				map[0][i][j] = 'P';
+			}
+		}
+	}
+	map[1][MAP_HEIGHT][MAP_WIDTH - 2] = 'H';
+
+	// 스파이스
+	map[0][MAP_HEIGHT - 4][MAP_WIDTH - 2] = '5';
+
+	// 샌드웜
+	map[1][3][4] = 'W';
+	map[1][7][6] = 'W';
+
+	// 바위
+	map[0][5][5] = 'R';
+	map[0][6][6] = 'R';
+	map[0][3][8] = 'R';
+}
+
+
