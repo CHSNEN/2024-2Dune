@@ -93,7 +93,7 @@ void display_cursor(CURSOR cursor) {
 }
 
 // 1) 준비 - 시스템 메시지 표시 함수 + 초기 메시지
-const char* system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
+char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
 
 void display_system_message(POSITION map_pos, const char* system_message) {
 	gotoxy(map_pos);
