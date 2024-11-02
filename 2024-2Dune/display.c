@@ -13,30 +13,6 @@
 const POSITION resource_pos = { 0, 0 };
 const POSITION map_pos = { 1, 0 };
 
-// 2) 커서 & 상태창 - 방향키 이동 처리
-POSITION pmove(POSITION cur, DIRECTION dir) {
-	POSITION move_vector = dtop(dir);
-	return padd(cur, move_vector);
-
-	POSITION new_pos = cur;
-	switch (dir) {
-		case d_up:
-			new_pos.row -= 1;
-			break;
-		case d_down:
-			new_pos.row += 1;
-			break;
-		case d_left:
-			new_pos.column -= 1;
-			break;
-		case d_right:
-			new_pos.column += 1;
-			break;
-		default:
-			break;
-	}
-	return new_pos;
-}
 
 char backbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
 char frontbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
@@ -117,7 +93,7 @@ void display_cursor(CURSOR cursor) {
 }
 
 // 1) 준비 - 시스템 메시지 표시 함수 + 초기 메시지
-char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
+const char* system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
 
 void display_system_message(POSITION map_pos, const char* system_message) {
 	gotoxy(map_pos);
@@ -212,7 +188,7 @@ void move_cursor(KEY key) {
 }
 
 // 2) 커서 & 상태창 - 방향키 더블클릭 함수
-void double_cursor(DIRECTION dir, CURSOR* cursor) {
+void double_cursor(DIRECTION dir, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	static clock_t last_click = 0;
 	clock_t cur_time = clock();
 
@@ -236,15 +212,15 @@ void double_cursor(DIRECTION dir, CURSOR* cursor) {
 void select_object(CURSOR cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	char selected = map[0][cursor.current.row][cursor.current.column];
 	display_object_info(map, cursor, resource_pos);
-
-	const char* system_message = "오브젝트 선택";
-	display_system_message(system_message);
+	
+	POSITION system_message_pos = { MAP_HEIGHT + 2, 0 };
+	display_system_message(system_message_pos, "오브젝트 선택");
 }
 
 // 2) 커서 & 상태창 - 취소 함수
 void deselect_object() {
 	display_object_info(NULL, (CURSOR) { 0, 0 }, resource_pos);
 
-	const char* system_mesage = "선택을 취소합니다.";
-	display_system_message(system_message);
+	POSITION system_message_pos = { MAP_HEIGHT + 2, 0 };
+	display_system_message(system_message_pos, "선택을 취소합니다.");
 }
