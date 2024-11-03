@@ -22,9 +22,12 @@ void display_resource(RESOURCE resource);
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void display_cursor(CURSOR cursor);
 
-void display_system_message(POSITION map_pos, const char* system_message);
+// 임시방편으로 위치 지정 변수 정의
+POSITION pos = { MAP_HEIGHT + 2, 0 };
+
+void display_system_message(POSITION pos, const char* system_message);
 void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION resource_pos);
-void display_commands(POSITION map_pos);
+void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 
 
@@ -37,9 +40,9 @@ void display(
 	display_map(map);
 	display_cursor(cursor);
 
-	display_system_message(map_pos, system_message);
+	display_system_message(pos, system_message);
 	display_object_info(map, cursor, resource_pos);
-	display_commands(map_pos);
+	display_commands(map);
 
 	init_map(map);
 }
@@ -78,6 +81,16 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 			frontbuf[i][j] = backbuf[i][j];
 		}
 	}
+
+	// 맵 테두리 '#'
+	for (int i = 0; i < MAP_HEIGHT; i++) {
+		map[1][i][0] = '#';
+		map[1][i][MAP_WIDTH - 1] = '#';
+		for (int j = 0; j < MAP_WIDTH; j++){
+			map[1][0][j] = '#';
+			map[1][MAP_HEIGHT - 1][j] = '#';
+		}
+	}
 }
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력
@@ -95,8 +108,8 @@ void display_cursor(CURSOR cursor) {
 // 1) 준비 - 시스템 메시지 표시 함수 + 초기 메시지
 char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
 
-void display_system_message(POSITION map_pos, const char* system_message) {
-	gotoxy(map_pos);
+void display_system_message(POSITION pos, const char* system_message) {
+	gotoxy(pos);
 	printf("System: %s\n", system_message);
 }
 
@@ -108,9 +121,10 @@ void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor
 }
 
 // 1) 준비 - 명령창 함수
-void display_commands(POSITION map_pos) {
-	gotoxy(map_pos);
-	printf("Choose the commands number>> 1. Move  2. Attack  3. Harvest\n");
+void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	POSITION command_pos = { MAP_HEIGHT + 2, MAP_WIDTH + 2 };
+	gotoxy(command_pos);
+	printf("Choose the commands number>> 1. Move 2. Attack 3. Harvest\n");
 }
 
 // 1) 준비 - 초기 상태 초기 배치 함수
@@ -126,42 +140,54 @@ void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	// 유닛(H, W)은 layer 1
 	
 	// 아트레이디스 본진, 장판, 하베스터
-	for (int i = MAP_HEIGHT - 3; i < MAP_HEIGHT - 1; i++) {
-		for (int j = 1; j <= 2; j++) {
-			if (i == MAP_HEIGHT - 3 && j == 1) {
-				map[0][i][j] = 'B';
-			}
-			else {
-				map[0][i][j] = 'P';
-			}
-		}
-	}
+	set_color(COLOR_ATREIDES);
+	map[0][MAP_HEIGHT - 3][1] = 'B';
+	map[0][MAP_HEIGHT - 3][2] = 'B';
+	map[0][MAP_HEIGHT - 2][1] = 'B';
+	map[0][MAP_HEIGHT - 2][2] = 'B';
+
+	set_color(COLOR_PLATE);
+	map[0][MAP_HEIGHT - 3][3] = 'P';
+	map[0][MAP_HEIGHT - 3][4] = 'P';
+	map[0][MAP_HEIGHT - 2][3] = 'P';
+	map[0][MAP_HEIGHT - 2][4] = 'P';
+
+	set_color(COLOR_ATREIDES);
 	map[1][MAP_HEIGHT - 2][1] = 'H';
 
 	// 하코넨 본진, 장판, 하베스터
-	for (int i = 1; i <= 2; i++) {
-		for (int j = MAP_WIDTH - 3; j < MAP_WIDTH - 1; j++) {
-			if (i == 1 && j == MAP_WIDTH - 3) {
-				map[0][i][j] = 'B';
-			}
-			else {
-				map[0][i][j] = 'P';
-			}
-		}
-	}
-	map[1][MAP_HEIGHT][MAP_WIDTH - 2] = 'H';
+	set_color(COLOR_HARKONNEN);
+	map[0][1][MAP_WIDTH - 3] = 'B';
+	map[0][2][MAP_WIDTH - 3] = 'B';
+	map[0][1][MAP_WIDTH - 2] = 'B';
+	map[0][2][MAP_WIDTH - 2] = 'B';
+
+	set_color(COLOR_PLATE);
+	map[0][3][MAP_WIDTH - 3] = 'P';
+	map[0][3][MAP_WIDTH - 3] = 'P';
+	map[0][3][MAP_WIDTH - 2] = 'P';
+	map[0][3][MAP_WIDTH - 2] = 'P';
+
+	set_color(COLOR_HARKONNEN);
+	map[1][2][MAP_WIDTH - 3] = 'H';
 
 	// 스파이스
-	map[0][MAP_HEIGHT - 4][MAP_WIDTH - 2] = '5';
+	set_color(COLOR_SPICE);
+	map[0][MAP_HEIGHT - 4][3] = 'S';
+	map[0][3][MAP_WIDTH - 4] = 'S';
 
 	// 샌드웜
-	map[1][3][4] = 'W';
-	map[1][7][6] = 'W';
+	set_color(COLOR_SANDWORM);
+	map[1][13][24] = 'W';
+	map[1][47][56] = 'W';
 
 	// 바위
+	set_color(COLOR_ROCK);
 	map[0][5][5] = 'R';
 	map[0][6][6] = 'R';
-	map[0][3][8] = 'R';
+	map[0][6][7] = 'R';
+	map[0][7][6] = 'R';
+	map[0][7][7] = 'R';
 }
 
 // 2) 커서 & 상태창 - 방향키 입력 및 이동 함수

@@ -5,8 +5,14 @@
 #include "io.h"
 #include "display.h"
 
-// 1031 display.c에 [1) 준비]의 화면 배치 함수 구현
-// + common.h의 OBJECT_SAMPLE에 int speed 변수 추가
+/*
+1031 display.c에 [1) 준비]의 화면 배치 함수 구현
+1101 display.c에 [1) 준비]의 초기 상태 배치 구현
+	 + [2) 커서 & 상태창] 방향키 이동, 더블클릭, 선택, 취소 함수 구현
+1102 display.c와 common.h 수정하여 [2) 커서 & 상태창] 오류 수정
+1103 display.c, display.h, common.h 수정하여 [1) 준비]와 [2) 커서 & 상태창]
+	 오류 수정하고, 실행시 콘솔 디테일 추가
+*/
 
 void init(void);
 void intro(void);

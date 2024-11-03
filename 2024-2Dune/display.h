@@ -15,6 +15,13 @@
 #define COLOR_CURSOR	112
 #define COLOR_RESOURCE  112
 
+#define COLOR_ATREIDES	9
+#define COLOR_HARKONNEN	12
+#define COLOR_SPICE		14
+#define COLOR_SANDWORM	6
+#define COLOR_ROCK		8
+#define COLOR_PLATE		7
+
 // 지금은 자원, 맵, 커서만 표시
 // 앞으로 화면에 표시할 내용들 여기에 추가하기
 void display(

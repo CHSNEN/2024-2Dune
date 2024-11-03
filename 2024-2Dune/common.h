@@ -93,4 +93,5 @@ typedef struct {
 } OBJECT_SAMPLE;
 
 extern char system_message[200];
+
 #endif
