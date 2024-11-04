@@ -12,6 +12,7 @@
 1102 display.c와 common.h 수정하여 [2) 커서 & 상태창] 오류 수정
 1103 display.c, display.h, common.h 수정하여 [1) 준비]와 [2) 커서 & 상태창]
 	 오류 수정하고, 실행시 콘솔 디테일 추가
+1104 display.c [1) 준비] 위치 수정, [2) 커서 & 상태창] 오류 수정
 */
 
 void init(void);
