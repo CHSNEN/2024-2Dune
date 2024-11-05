@@ -32,8 +32,9 @@ int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
 void display_system_message(POSITION pos, const char* system_message);
 void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION resource_pos);
 void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
-void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], 
-	int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
+// void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], 
+	// int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
+void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE objects[MAX_OBJECTS]);
 
 
 void display(
@@ -50,6 +51,7 @@ void display(
 	display_commands(map);
 
 	// init_map(map, set_col_map);
+	sandworm_action(map, objects);
 }
 
 void display_resource(RESOURCE resource) {
@@ -120,7 +122,7 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 
 	// 건물, 지형(B, P, S, R)은 layer 0
 	// 유닛(H, W)은 layer 1
-
+	/*
 	// 아트레이디스 본진, 장판, 하베스터
 	map[0][MAP_HEIGHT - 3][1] = 'B';
 	map[0][MAP_HEIGHT - 3][2] = 'B';
@@ -188,6 +190,7 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 	set_col_map[0][6][7] = COLOR_ROCK;
 	set_col_map[0][7][6] = COLOR_ROCK;
 	set_col_map[0][7][7] = COLOR_ROCK;
+	*/
 }
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력
@@ -306,6 +309,55 @@ void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	set_col_map[0][7][7] = COLOR_ROCK;
 }
 */
+OBJECT_SAMPLE objects[MAX_OBJECTS] = {
+	// ATREIDES B
+	{{MAP_HEIGHT - 3, 1},{MAP_HEIGHT - 3, 1}, 'B', 0, 0, 0, COLOR_ATREIDES},
+	{{MAP_HEIGHT - 3, 2},{MAP_HEIGHT - 3, 2}, 'B', 0, 0, 0, COLOR_ATREIDES},
+	{{MAP_HEIGHT - 2, 1},{MAP_HEIGHT - 2, 1}, 'B', 0, 0, 0, COLOR_ATREIDES},
+	{{MAP_HEIGHT - 2, 2},{MAP_HEIGHT - 2, 2}, 'B', 0, 0, 0, COLOR_ATREIDES},
+
+	// ATREIDES P
+	{{MAP_HEIGHT - 3, 3},{MAP_HEIGHT - 3, 3}, 'P', 0, 0, 0, COLOR_PLATE},
+	{{MAP_HEIGHT - 3, 4},{MAP_HEIGHT - 3, 4}, 'P', 0, 0, 0, COLOR_PLATE},
+	{{MAP_HEIGHT - 2, 3},{MAP_HEIGHT - 2, 3}, 'P', 0, 0, 0, COLOR_PLATE},
+	{{MAP_HEIGHT - 2, 4},{MAP_HEIGHT - 3, 4}, 'P', 0, 0, 0, COLOR_PLATE},
+
+	// ATREIDES H
+	{{MAP_HEIGHT - 4, 1},{MAP_HEIGHT - 4, 1}, 'H', 0, 0, 0, COLOR_ATREIDES},
+
+	// HARKONNEN B
+	{{1, MAP_WIDTH - 3}, {1, MAP_WIDTH - 3}, 'B', 0, 0, 0, COLOR_HARKONNEN},
+	{{2, MAP_WIDTH - 3}, {2, MAP_WIDTH - 3}, 'B', 0, 0, 0, COLOR_HARKONNEN},
+	{{1, MAP_WIDTH - 2}, {1, MAP_WIDTH - 2}, 'B', 0, 0, 0, COLOR_HARKONNEN},
+	{{2, MAP_WIDTH - 2}, {2, MAP_WIDTH - 2}, 'B', 0, 0, 0, COLOR_HARKONNEN},
+
+	// HARKONNEN P
+	{{1, MAP_WIDTH - 4}, {1, MAP_WIDTH - 4}, 'P', 0, 0, 0, COLOR_PLATE},
+	{{2, MAP_WIDTH - 4}, {2, MAP_WIDTH - 4}, 'P', 0, 0, 0, COLOR_PLATE},
+	{{1, MAP_WIDTH - 5}, {1, MAP_WIDTH - 5}, 'P', 0, 0, 0, COLOR_PLATE},
+	{{2, MAP_WIDTH - 5}, {2, MAP_WIDTH - 5}, 'P', 0, 0, 0, COLOR_PLATE},
+
+	// HARKONNEN H
+	{{3, MAP_WIDTH - 3}, {3, MAP_WIDTH - 3}, 'H', 0, 0, 0, COLOR_HARKONNEN},
+
+	// SPICE
+	{{MAP_HEIGHT - 4, 3}, {MAP_HEIGHT - 4, 3}, 'S', 0, 0, 0, COLOR_SPICE},
+	{{3, MAP_WIDTH - 4}, {3, MAP_WIDTH - 4}, 'S', 0, 0, 0, COLOR_SPICE},
+
+	// SANDWORM
+	{{13, 24}, {0, 0}, 'W', 1000, 0, 1, COLOR_SANDWORM},
+	{{7, 56}, {0, 0}, 'W', 1000, 0, 1, COLOR_SANDWORM},
+
+	// ROCK
+	{{5, 5}, {5, 5}, 'R', 0, 0, 0, COLOR_ROCK},
+	{{6, 6}, {6, 6}, 'R', 0, 0, 0, COLOR_ROCK},
+	{{6, 7}, {6, 7}, 'R', 0, 0, 0, COLOR_ROCK},
+	{{7, 6}, {7, 6}, 'R', 0, 0, 0, COLOR_ROCK},
+	{{7, 7}, {7, 7}, 'R', 0, 0, 0, COLOR_ROCK}
+};
+
+int object_count = 26;
+int unit_count = 4;
 
 // 2) 커서 & 상태창 - 방향키 입력 및 이동 함수
 void move_cursor(KEY key) {
@@ -366,4 +418,74 @@ void deselect_object() {
 
 	POSITION system_message_pos = { MAP_HEIGHT + 2, 0 };
 	display_system_message(system_message_pos, "선택을 취소합니다.");
+}
+
+// 3) 중립 유닛 - 가까운 유닛 감지 함수
+OBJECT_SAMPLE sandworm = { {13, 24}, {0, 0}, 'W', 1000, 0, 1, COLOR_SANDWORM };
+
+POSITION find_near_unit(POSITION sandworm_pos) {
+	POSITION near_unit = objects[0].pos;
+	int min_distance = abs(sandworm_pos.row - objects[0].pos.row)
+		+ abs(sandworm_pos.column - objects[0].pos.column);
+
+	for (int i = 1; i < unit_count; i++) {
+		int distance = abs(sandworm_pos.row - objects[i].pos.row)
+			+ abs(sandworm_pos.column - objects[i].pos.column);
+		if (distance < min_distance) {
+			min_distance = distance;
+			near_unit = objects[i].pos;
+		}
+	}
+	return near_unit;
+}
+
+// 3) 중립 유닛 - 샌드웜 near_unit으로 이동 함수
+void move_to_near(OBJECT_SAMPLE* sandworm, POSITION target) {
+	if (sandworm->pos.row < target.row) {
+		sandworm->pos.row++;
+	}
+	else if (sandworm->pos.row < target.row) {
+		sandworm->pos.row--;
+	}
+	if (sandworm->pos.column < target.column) {
+		sandworm->pos.column++;
+	}
+	else if (sandworm->pos.column < target.column) {
+		sandworm->pos.column--;
+	}
+}
+
+// 3) 중립 유닛 - 유닛 잡아먹기 함수
+void eat_unit(OBJECT_SAMPLE* sandworm) {
+	for (int i = 0; i < unit_count; i++) {
+		if (sandworm->pos.row == objects[i].pos.row && sandworm->pos.column == objects[i].pos.column) {
+			for (int j = i; j < unit_count - 1;j++) {
+				objects[j] = objects[j + 1];
+			}
+			unit_count--;
+
+			display_system_message(pos, "샌드웜이 유닛을 잡아먹었습니다!\n");
+			break;
+		}
+	}
+}
+
+// 3) 중립 유닛 - 샌드웜 배설 함수
+void make_spice(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	POSITION spice_pos = { rand() % MAP_HEIGHT, rand() % MAP_WIDTH };
+	map[1][spice_pos.row][spice_pos.column] = 'S';
+
+	display_system_message(pos, "샌드웜이 배설하여 스파이스 매장지가 생성되었습니다!\n");
+}
+
+// 3) 중립 유닛 - 샌드웜 행동 종합적으로 호출
+void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE* sandworm) {
+	POSITION near_unit_pos = find_near_unit(sandworm->pos);
+	sandworm->dest = near_unit_pos;
+
+	move_to_near(&sandworm, sandworm->dest);
+	eat_unit(sandworm);
+	if (rand() % 10 == 0) {
+		make_spice(map);
+	}
 }

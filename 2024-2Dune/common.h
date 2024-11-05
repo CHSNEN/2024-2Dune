@@ -14,6 +14,7 @@
 #define MAP_WIDTH	60
 #define MAP_HEIGHT	18
 
+#define MAX_OBJECTS	100
 
 /* ================= 위치와 방향 =================== */
 // 맵에서 위치를 나타내는 구조체
@@ -90,8 +91,18 @@ typedef struct {
 	int move_period;	// '몇 ms마다 한 칸 움직이는지'를 뜻함
 	int next_move_time;	// 다음에 움직일 시간
 	int speed;
+	int color;
 } OBJECT_SAMPLE;
 
 extern char system_message[200];
+
+// 3) 중립 유닛 - 샌드웜 이동용 구조체
+typedef struct {
+	POSITION pos;	// 현재 위치
+	POSITION dest;	// 목적지
+	int speed;		// 이동 속도
+	char repr;		// 샌드웜 표시
+} UNIT;
+
 
 #endif
