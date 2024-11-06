@@ -29,6 +29,11 @@ POSITION pos = { MAP_HEIGHT + 2, 0 };
 // 아트레디이스, 하코넨 등 색상을 구분할 배열 정의
 int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
 
+// 색상 리셋
+void reset_color() {
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), COLOR_DEFAULT);
+}
+
 void display_system_message(POSITION pos, const char* system_message);
 void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION resource_pos);
 void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
@@ -40,7 +45,8 @@ void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE obj
 void display(
 	RESOURCE resource,
 	char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH],
-	CURSOR cursor)
+	CURSOR cursor,
+	OBJECT_SAMPLE objects[MAX_OBJECTS])
 {
 	display_resource(resource);
 	display_map(map, set_col_map);
@@ -86,8 +92,10 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 
 				// 색상 적용
 				int set_col = set_col_map[0][i][j];
-				if (set_col_map[1][i][j] == COLOR_SANDWORM) {
-					set_col = set_col_map[1][i][j];
+				for (int layer = 0; layer < N_LAYER; layer++) {
+					if (set_col_map[layer][i][j] != COLOR_DEFAULT) {
+						set_col = set_col_map[layer][i][j];
+					}
 				}
 				set_color(set_col);
 
@@ -96,7 +104,7 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 			frontbuf[i][j] = backbuf[i][j];
 		}
 	}
-	set_color(COLOR_DEFAULT);
+	reset_color();
 
 	// 맵 테두리 '#'
 	/*
@@ -199,7 +207,7 @@ void display_cursor(CURSOR cursor) {
 	POSITION curr = cursor.current;
 
 	char ch = frontbuf[prev.row][prev.column];
-	printc(padd(map_pos, prev), ch, COLOR_DEFAULT);
+	printc(padd(map_pos, prev), ch, set_col_map[0][prev.row][prev.column]);
 
 	ch = frontbuf[curr.row][curr.column];
 	printc(padd(map_pos, curr), ch, COLOR_CURSOR);
@@ -345,8 +353,8 @@ OBJECT_SAMPLE objects[MAX_OBJECTS] = {
 	{{3, MAP_WIDTH - 4}, {3, MAP_WIDTH - 4}, 'S', 0, 0, 0, COLOR_SPICE},
 
 	// SANDWORM
-	{{13, 24}, {0, 0}, 'W', 1000, 0, 1, COLOR_SANDWORM},
-	{{7, 56}, {0, 0}, 'W', 1000, 0, 1, COLOR_SANDWORM},
+	{{13, 24}, {0, 0}, 'W', 100000, 0, 1, COLOR_SANDWORM},
+	{{7, 56}, {0, 0}, 'W', 100000, 0, 1, COLOR_SANDWORM},
 
 	// ROCK
 	{{5, 5}, {5, 5}, 'R', 0, 0, 0, COLOR_ROCK},
@@ -358,6 +366,32 @@ OBJECT_SAMPLE objects[MAX_OBJECTS] = {
 
 int object_count = 26;
 int unit_count = 4;
+
+// 1) 준비 - 색상 적용 함수
+void init_set_col_map(int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	for (int i = 0; i < MAP_HEIGHT; i++) {
+		for (int j = 0; j < MAP_WIDTH; j++) {
+			if (i == 0 || i == MAP_HEIGHT - 1 || j == 0 || j == MAP_WIDTH - 1) {
+				set_col_map[0][i][j] = COLOR_DEFAULT;
+				map[0][i][j] = '#';
+			}
+		}
+	}
+	for (int i = 0; i < MAX_OBJECTS; i++) {
+		int row = objects[i].pos.row;
+		int col = objects[i].pos.column;
+
+		if (objects[i].repr == 'B' || objects[i].repr == 'P' || objects[i].repr == 'H') {
+			set_col_map[0][row][col] = COLOR_ATREIDES;
+		}
+		else if (objects[i].repr == 'W' || objects[i].repr == 'T' || objects[i].repr == 'C') {
+			set_col_map[0][row][col] = COLOR_HARKONNEN;
+		}
+		else {
+			set_col_map[0][row][col] = objects[i].color;
+		}
+	}
+}
 
 // 2) 커서 & 상태창 - 방향키 입력 및 이동 함수
 void move_cursor(KEY key) {

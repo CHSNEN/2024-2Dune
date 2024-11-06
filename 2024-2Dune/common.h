@@ -104,5 +104,8 @@ typedef struct {
 	char repr;		// »÷µå¿ú Ç¥½Ã
 } UNIT;
 
+extern OBJECT_SAMPLE objects[MAX_OBJECTS];
+
+
 
 #endif

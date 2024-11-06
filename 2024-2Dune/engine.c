@@ -14,6 +14,7 @@
 	 오류 수정하고, 실행시 콘솔 디테일 추가
 1104 display.c [1) 준비] 위치 수정, [2) 커서 & 상태창] 오류 수정
 1105 [3) 중립 유닛] 함수 구현 및 구조체 정의
+1105 [3) 중립 유닛] 오류 수정
 */
 
 void init(void);
@@ -53,7 +54,7 @@ int main(void) {
 
 	init();
 	intro();
-	display(resource, map, cursor);
+	display(resource, map, cursor, objects);
 
 	while (1) {
 		// loop 돌 때마다(즉, TICK==10ms마다) 키 입력 확인
@@ -77,7 +78,7 @@ int main(void) {
 		sample_obj_move();
 
 		// 화면 출력
-		display(resource, map, cursor);
+		display(resource, map, cursor, objects);
 		Sleep(TICK);
 		sys_clock += 10;
 	}
