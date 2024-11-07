@@ -187,7 +187,9 @@ void sample_obj_move(void) {
 	}
 
 	// 오브젝트(건물, 유닛 등)은 layer1(map[1])에 저장
-	map[1][obj.pos.row][obj.pos.column] = -1;
+	//map[1][obj.pos.row][obj.pos.column] = -1;
+	map[1][obj.pos.row][obj.pos.column] = ' ';	// 임시방편으로 공백으로 수정
+
 	obj.pos = sample_obj_next_position();
 	map[1][obj.pos.row][obj.pos.column] = obj.repr;
 

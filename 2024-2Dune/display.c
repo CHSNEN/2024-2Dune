@@ -87,6 +87,63 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 
 	for (int i = 0; i < MAP_HEIGHT; i++) {
 		for (int j = 0; j < MAP_WIDTH; j++) {
+			char element = map[0][i][j];
+			if (element == '#') {
+				set_color(COLOR_DEFAULT);
+				printf("#");
+			}
+			else if (element == 'B') {
+				if (set_col_map[0][i][j] == COLOR_ATREIDES) {
+					set_color(COLOR_ATREIDES);
+				}
+				else if (set_col_map[0][i][j] == COLOR_HARKONNEN) {
+					set_color(COLOR_HARKONNEN);
+				}
+				printf("B");
+			}
+			else if(element == 'H') {
+				if (set_col_map[0][i][j] == COLOR_ATREIDES) {
+					set_color(COLOR_ATREIDES);
+				}
+				else if (set_col_map[0][i][j] == COLOR_HARKONNEN) {
+					set_color(COLOR_HARKONNEN);
+				}
+				printf("H");
+			}
+			else if (element == 'P') {
+				set_color(COLOR_PLATE);
+				printf("P");
+			}
+			else if (element == 'S') {
+				set_color(COLOR_SPICE);
+				printf("S");
+			}
+			else if (element == 'R') {
+				set_color(COLOR_ROCK);
+				printf("R");
+			}
+			else {
+				printf(" ");
+			}
+		}
+		printf("\n");
+	}
+	reset_color();
+
+	/*
+	// 맵 테두리 '#'
+	for (int i = 0; i < MAP_HEIGHT; i++) {
+		set_color(COLOR_DEFAULT);
+		map[1][i][0] = '#';
+		map[1][i][MAP_WIDTH - 1] = '#';
+		for (int j = 0; j < MAP_WIDTH; j++) {
+			map[1][0][j] = '#';
+			map[1][MAP_HEIGHT - 1][j] = '#';
+		}
+	}
+
+	for (int i = 0; i < MAP_HEIGHT; i++) {
+		for (int j = 0; j < MAP_WIDTH; j++) {
 			if (frontbuf[i][j] != backbuf[i][j]) {
 				POSITION pos = { i, j };
 
@@ -105,18 +162,6 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 		}
 	}
 	reset_color();
-
-	// 맵 테두리 '#'
-	/*
-	for (int i = 0; i < MAP_HEIGHT; i++) {
-		set_color(COLOR_DEFAULT);
-		map[1][i][0] = '#';
-		map[1][i][MAP_WIDTH - 1] = '#';
-		for (int j = 0; j < MAP_WIDTH; j++){
-			map[1][0][j] = '#';
-			map[1][MAP_HEIGHT - 1][j] = '#';
-		}
-	}
 	*/
 
 	// 사막: 기본 지형(빈 칸)
@@ -203,6 +248,11 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력
 void display_cursor(CURSOR cursor) {
+	gotoxy(cursor.current);
+	set_color(COLOR_CURSOR);
+
+	printf(" ");
+
 	POSITION prev = cursor.previous;
 	POSITION curr = cursor.current;
 
@@ -217,8 +267,15 @@ void display_cursor(CURSOR cursor) {
 char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
 
 void display_system_message(POSITION pos, const char* system_message) {
-	gotoxy(pos);
+	static int line = 0;
+	gotoxy((POSITION) { pos.row + line, pos.column });
 	printf("System: %s\n", system_message);
+	line++;
+
+	if (line >= 5) {
+		line = 0;
+		system("cls");
+	}
 }
 
 // 1) 준비 - 상태창 함수
@@ -519,7 +576,7 @@ void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE* sa
 
 	move_to_near(&sandworm, sandworm->dest);
 	eat_unit(sandworm);
-	if (rand() % 10 == 0) {
+	if (rand() % 1000 == 0) {
 		make_spice(map);
 	}
 }
