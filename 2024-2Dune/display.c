@@ -52,9 +52,9 @@ void display(
 	display_map(map, set_col_map);
 	display_cursor(cursor);
 
-	display_system_message(pos, system_message);
 	display_object_info(map, cursor, resource_pos);
 	display_commands(map);
+	display_system_message(pos, system_message);
 
 	// init_map(map, set_col_map);
 	sandworm_action(map, objects);
@@ -86,49 +86,50 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 	project(map, backbuf);
 
 	for (int i = 0; i < MAP_HEIGHT; i++) {
+		gotoxy((POSITION) { i + 1, 0 });
 		for (int j = 0; j < MAP_WIDTH; j++) {
-			char element = map[0][i][j];
-			if (element == '#') {
-				set_color(COLOR_DEFAULT);
-				printf("#");
-			}
-			else if (element == 'B') {
-				if (set_col_map[0][i][j] == COLOR_ATREIDES) {
-					set_color(COLOR_ATREIDES);
-				}
-				else if (set_col_map[0][i][j] == COLOR_HARKONNEN) {
-					set_color(COLOR_HARKONNEN);
-				}
-				printf("B");
-			}
-			else if(element == 'H') {
-				if (set_col_map[0][i][j] == COLOR_ATREIDES) {
-					set_color(COLOR_ATREIDES);
-				}
-				else if (set_col_map[0][i][j] == COLOR_HARKONNEN) {
-					set_color(COLOR_HARKONNEN);
-				}
-				printf("H");
-			}
-			else if (element == 'P') {
-				set_color(COLOR_PLATE);
-				printf("P");
-			}
-			else if (element == 'S') {
-				set_color(COLOR_SPICE);
-				printf("S");
-			}
-			else if (element == 'R') {
-				set_color(COLOR_ROCK);
-				printf("R");
-			}
-			else {
-				printf(" ");
+			char element = backbuf[i][j];
+			int color = set_col_map[0][i][j];
+
+			switch (element) {
+				case '#':
+					set_color(COLOR_DEFAULT);
+					printf("#");
+					break;
+				case 'B':
+					set_color(color == COLOR_ATREIDES ? COLOR_ATREIDES : COLOR_HARKONNEN);
+					printf("B");
+					break;
+				case 'H':
+					set_color(color == COLOR_ATREIDES ? COLOR_ATREIDES : COLOR_HARKONNEN);
+					printf("H");
+					break;
+				case 'P':
+					set_color(COLOR_PLATE);
+					printf("P");
+					break;
+				case 'S':
+					set_color(COLOR_SPICE);
+					printf("S");
+					break;
+				case 'R':
+					set_color(COLOR_ROCK);
+					printf("R");
+					break;
+				default:
+					printf(" ");
+					break;
 			}
 		}
+		reset_color();
 		printf("\n");
 	}
-	reset_color();
+
+	for (int i = 0; i < MAX_OBJECTS; i++) {
+		gotoxy((POSITION) { objects[i].pos.row + 1, objects[i].pos.column + 1 });
+		set_color(set_col_map[1][objects[i].pos.row][objects[i].pos.column]);
+		printf("%c", objects[i].repr);
+	}
 
 	/*
 	// 맵 테두리 '#'
@@ -248,33 +249,46 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력
 void display_cursor(CURSOR cursor) {
-	gotoxy(cursor.current);
-	set_color(COLOR_CURSOR);
-
-	printf(" ");
-
 	POSITION prev = cursor.previous;
 	POSITION curr = cursor.current;
 
+	gotoxy(prev);
+	int prev_color = set_col_map[0][prev.row][prev.column];
+	set_color(prev_color);
+	printf("%c", frontbuf[prev.row][prev.column]);
+
+	gotoxy(curr);
+	set_color(COLOR_CURSOR);
+	printf(" ");
+
+	reset_color();
+
+	/*
 	char ch = frontbuf[prev.row][prev.column];
 	printc(padd(map_pos, prev), ch, set_col_map[0][prev.row][prev.column]);
 
 	ch = frontbuf[curr.row][curr.column];
 	printc(padd(map_pos, curr), ch, COLOR_CURSOR);
+	*/
 }
 
 // 1) 준비 - 시스템 메시지 표시 함수 + 초기 메시지
 char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
 
 void display_system_message(POSITION pos, const char* system_message) {
+	static char last_message[200] = "";
 	static int line = 0;
-	gotoxy((POSITION) { pos.row + line, pos.column });
-	printf("System: %s\n", system_message);
-	line++;
 
-	if (line >= 5) {
-		line = 0;
-		system("cls");
+	if (strcmp(last_message, system_message) != 0) {
+		strcpy_s(last_message, sizeof(last_message), system_message);
+		gotoxy((POSITION) { pos.row + line, pos.column });
+		printf("System: %s", system_message);
+		
+		line++;
+
+		if (line >= 5) {
+			line = 0;
+		}
 	}
 }
 
@@ -282,7 +296,8 @@ void display_system_message(POSITION pos, const char* system_message) {
 void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION resource_pos) {
 	char selected = map[1][cursor.current.row][cursor.current.column];
 	gotoxy(resource_pos);
-	printf("Selected Object>> %c\n", selected);
+	printf("Selected Object>> %c \n", selected);
+	// reset_color();
 }
 
 // 1) 준비 - 명령창 함수
@@ -290,6 +305,7 @@ void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	POSITION command_pos = { MAP_HEIGHT + 2, MAP_WIDTH + 2 };
 	gotoxy(command_pos);
 	printf("Choose the commands number>> 1. Move 2. Attack 3. Harvest\n");
+	// reset_color();
 }
 
 // 1) 준비 - 초기 상태 초기 배치 함수
