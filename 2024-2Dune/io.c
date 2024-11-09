@@ -37,6 +37,8 @@ KEY get_key(void) {
 		case 80: return k_down;
 		default: return k_undef;
 		}
+	case 32: return k_space;	// ASCII 32 >> SP
+	case 27: return k_esc;		// ASCII 27 >> ESC
 	default: return k_undef;
 	}
 }

@@ -28,7 +28,8 @@ void display(
 	RESOURCE resource,
 	char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH],
 	CURSOR cursor,
-	OBJECT_SAMPLE objects[MAX_OBJECTS]
+	OBJECT_SAMPLE objects[MAX_OBJECTS], 
+	KEY key
 );
 
 #endif

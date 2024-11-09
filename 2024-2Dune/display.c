@@ -12,6 +12,7 @@
 // 출력할 내용들의 좌상단(topleft) 좌표
 const POSITION resource_pos = { 0, 0 };
 const POSITION map_pos = { 1, 0 };
+const POSITION object_pos = { 0, MAP_WIDTH + 2 };
 
 
 char backbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
@@ -35,10 +36,9 @@ void reset_color() {
 }
 
 void display_system_message(POSITION pos, const char* system_message);
-void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION resource_pos);
+void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION object_pos);
 void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
-// void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], 
-	// int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
+void handle_input(int key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE objects[MAX_OBJECTS]);
 
 
@@ -46,15 +46,18 @@ void display(
 	RESOURCE resource,
 	char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH],
 	CURSOR cursor,
-	OBJECT_SAMPLE objects[MAX_OBJECTS])
+	OBJECT_SAMPLE objects[MAX_OBJECTS], 
+	KEY key)
 {
 	display_resource(resource);
 	display_map(map, set_col_map);
 	display_cursor(cursor);
 
-	display_object_info(map, cursor, resource_pos);
+	display_object_info(map, cursor, object_pos);
 	display_commands(map);
 	display_system_message(pos, system_message);
+
+	handle_input(key, &cursor, map);
 
 	// init_map(map, set_col_map);
 	sandworm_action(map, objects);
@@ -67,6 +70,7 @@ void display_resource(RESOURCE resource) {
 		resource.spice, resource.spice_max,
 		resource.population, resource.population_max
 	);
+	reset_color();
 }
 
 // subfunction of draw_map()
@@ -86,8 +90,9 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 	project(map, backbuf);
 
 	for (int i = 0; i < MAP_HEIGHT; i++) {
-		gotoxy((POSITION) { i + 1, 0 });
+		// gotoxy((POSITION) { i + 1, 0 });
 		for (int j = 0; j < MAP_WIDTH; j++) {
+			gotoxy((POSITION) { i + 1, j });
 			char element = backbuf[i][j];
 			int color = set_col_map[0][i][j];
 
@@ -125,11 +130,13 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 		printf("\n");
 	}
 
+	/*
 	for (int i = 0; i < MAX_OBJECTS; i++) {
 		gotoxy((POSITION) { objects[i].pos.row + 1, objects[i].pos.column + 1 });
 		set_color(set_col_map[1][objects[i].pos.row][objects[i].pos.column]);
 		printf("%c", objects[i].repr);
 	}
+	*/
 
 	/*
 	// 맵 테두리 '#'
@@ -293,11 +300,11 @@ void display_system_message(POSITION pos, const char* system_message) {
 }
 
 // 1) 준비 - 상태창 함수
-void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION resource_pos) {
+void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION object_pos) {
 	char selected = map[1][cursor.current.row][cursor.current.column];
-	gotoxy(resource_pos);
+	gotoxy(object_pos);
 	printf("Selected Object>> %c \n", selected);
-	// reset_color();
+	reset_color();
 }
 
 // 1) 준비 - 명령창 함수
@@ -490,20 +497,22 @@ void move_cursor(KEY key) {
 }
 
 // 2) 커서 & 상태창 - 방향키 더블클릭 함수
+const int double_click_time = 100;
+
 void double_cursor(DIRECTION dir, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	static clock_t last_click = 0;
 	clock_t cur_time = clock();
 
 	// 방향키 더블 이동
 	int step = 1;
-	if ((cur_time - last_click) < CLOCKS_PER_SEC / 2) {
+	if ((cur_time - last_click) < double_click_time / 2) {
 		step = 4;
 	}
 	last_click = cur_time;
 
 	// 커서 이동
 	for (int i = 0; i < step; i++) {
-		cursor_move(dir);
+		move_cursor(dir);
 	}
 
 	// 객체 정보 업데이트
@@ -511,20 +520,81 @@ void double_cursor(DIRECTION dir, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][
 }
 
 // 2) 커서 & 상태창 - 선택 함수
-void select_object(CURSOR cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
-	char selected = map[0][cursor.current.row][cursor.current.column];
-	display_object_info(map, cursor, resource_pos);
-	
+void select_object(CURSOR *cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	POSITION pos = cursor->current;
+	char current_tile = map[1][pos.row][pos.column];
 	POSITION system_message_pos = { MAP_HEIGHT + 2, 0 };
-	display_system_message(system_message_pos, "오브젝트 선택");
+
+	switch (current_tile) {
+		//case ' ' :
+			//display_system_message(system_message_pos, "사막 지형을 선택하였습니다.");
+			//break;
+		case 'B' :
+			display_system_message(system_message_pos, "본진을 선택하였습니다.");
+			break;
+		case 'H' :
+			display_system_message(system_message_pos, "하베스터를 선택하였습니다.");
+			break;
+		case 'P':
+			display_system_message(system_message_pos, "장판을 선택하였습니다.");
+			break;
+		case 'W':
+			display_system_message(system_message_pos, "샌드웜을 선택하였습니다.");
+			break;
+		case 'S':
+			display_system_message(system_message_pos, "스파이스 매장지를 선택하였습니다.");
+			break;
+		case 'R':
+			display_system_message(system_message_pos, "바위를 선택하였습니다.");
+			break;
+		default :
+			display_system_message(system_message_pos, "사막 지형을 선택했습니다.");
+			break;
+	}
+	
 }
 
 // 2) 커서 & 상태창 - 취소 함수
 void deselect_object() {
 	display_object_info(NULL, (CURSOR) { 0, 0 }, resource_pos);
-
 	POSITION system_message_pos = { MAP_HEIGHT + 2, 0 };
-	display_system_message(system_message_pos, "선택을 취소합니다.");
+	display_system_message(system_message_pos, "");
+}
+
+// 2) 커서 & 상태창 - 커서 & 상태창 함수 종합적으로 호출
+void handle_input(int key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	DIRECTION dir;
+
+	switch (key) {
+	case k_up:
+		dir = d_up;
+		double_cursor(dir, cursor, map);
+		break;
+	case k_down:
+		dir = d_down;
+		double_cursor(dir, cursor, map);
+		break;
+	case k_left:
+		dir = d_left;
+		double_cursor(dir, cursor, map);
+		break;
+	case k_right:
+		dir = d_right;
+		double_cursor(dir, cursor, map); 
+		break;
+	case k_space:
+		select_object(cursor, map); // 스페이스바로 오브젝트 선택
+		break;
+	case k_esc:
+		deselect_object(); // ESC 키로 선택 취소
+		break;
+	case k_quit:
+		outro(); // q 키 게임 종료
+		exit(0);
+		break;
+	default:
+		break;
+	}
 }
 
 // 3) 중립 유닛 - 가까운 유닛 감지 함수
