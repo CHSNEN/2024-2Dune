@@ -15,6 +15,7 @@
 #define MAP_HEIGHT	18
 
 #define MAX_OBJECTS	100
+#define MAX_COMMANDS 10
 
 /* ================= 위치와 방향 =================== */
 // 맵에서 위치를 나타내는 구조체
@@ -37,6 +38,7 @@ typedef enum {
 	k_undef, // 정의되지 않은 키 입력	
 	k_space, // 스페이스 바
 	k_esc,	// ESC
+	k_h, k_fr, k_fi, k_s, k_t, k_x, // 차례로 harvester, fremen, fighter, soldier, heavy tanker, cancel
 } KEY;
 
 
@@ -101,6 +103,21 @@ extern char system_message[200];
 
 extern OBJECT_SAMPLE objects[MAX_OBJECTS];
 
+// 4) 유닛 1기 생산 - 유닛 생산용 구조체
+typedef struct {
+	char building;			// 건물 단축어
+	char command_k;			// 단축키
+	int cost;				// 생산에 필요한 자원
+	const char* unit_name;	// 생산될 유닛 이름
+	int house;				// 0: 중립, 1: 아트레이디스, 2: 하코넨
+} BUILD_COMMAND;
 
+// 4) 유닛 1기 생산 - 명령어 목록 정리용 구조체
+typedef struct {
+	BUILD_COMMAND commands[MAX_COMMANDS];
+	int command_cnt;
+} COMMAND_LIST;
+
+extern char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH];
 
 #endif

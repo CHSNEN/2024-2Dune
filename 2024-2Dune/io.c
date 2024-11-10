@@ -28,6 +28,12 @@ KEY get_key(void) {
 	int byte = _getch();    // 입력된 키를 전달 받기
 	switch (byte) {
 	case 'q': return k_quit;  // 'q'를 누르면 종료
+	case 'h': case 'H': return k_h;
+	case 'fr': case 'Fr': case 'FR': return k_fr;
+	case 'fi': case 'Fi': case 'FI': return k_fi;
+	case 's': case 'S': return k_s;
+	case 't': case 'T': return k_t;
+	case 'x': case 'X': return k_x;
 	case 224:
 		byte = _getch();  // MSB 224가 입력 되면 1바이트 더 전달 받기
 		switch (byte) {

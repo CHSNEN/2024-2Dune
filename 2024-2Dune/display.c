@@ -30,6 +30,20 @@ POSITION pos = { MAP_HEIGHT + 2, 0 };
 // 아트레디이스, 하코넨 등 색상을 구분할 배열 정의
 int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
 
+// 4) 유닛 1기 생산 - 단축키 목록
+COMMAND_LIST command_list;
+void init_commands() {
+	command_list.command_cnt = 5;
+	command_list.commands[0] = (BUILD_COMMAND){ 'B', 'H', 0, "Harvester", 0 };
+	command_list.commands[1] = (BUILD_COMMAND){ 'B', 'S', 4, "Soldier", 1 };
+	command_list.commands[2] = (BUILD_COMMAND){ 'S', 'F', 5, "Fremen", 1 };
+	command_list.commands[3] = (BUILD_COMMAND){ 'A','F', 3, "Fighter", 2 };
+	command_list.commands[4] = (BUILD_COMMAND){ 'F', 'T', 5, "Heavy Tank", 2 };
+}
+
+// 4) 유닛 1기 생산 - Bonus 생산 시간
+int make_building_time = -1;
+
 // 색상 리셋
 void reset_color() {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), COLOR_DEFAULT);
@@ -42,7 +56,7 @@ void init_set_col_map(int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char map[
 
 void handle_input(KEY key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE objects[MAX_OBJECTS]);
-
+void handle_command_input(KEY key, char building);
 
 void display(
 	RESOURCE resource,
@@ -63,8 +77,12 @@ void display(
 
 	handle_input(key, &cursor, map);
 
-	// init_map(map, set_col_map);
 	sandworm_action(map, objects);
+
+	int building_idx = find_building_pos(key);
+	if (building_idx != -1) {  // 유효한 명령어가 있을 때만 실행
+		handle_command_input(key, command_list.commands[building_idx]);
+	}
 }
 
 void display_resource(RESOURCE resource) {
@@ -314,6 +332,16 @@ void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor
 	char selected = map[1][cursor.current.row][cursor.current.column];
 	gotoxy(object_pos);
 	printf("Selected Object>> %c \n", selected);
+
+	// 4) Bonus) 생산 시간 표시
+	if (make_building_time > 0) {
+		printf("Production time: %d sec...\n", make_building_time);
+		make_building_time--;
+		if (make_building_time == 0) {
+			display_system_message(pos, "Production is complete!");
+		}
+	}
+
 	reset_color();
 }
 
@@ -648,7 +676,7 @@ void move_to_near(OBJECT_SAMPLE* sandworm, POSITION target) {
 		sandworm->pos.column--;
 	}
 
-	printf("Sandworm moved to row: %d, column: %d\n", sandworm->pos.row, sandworm->pos.column);
+	// printf("Sandworm moved to row: %d, column: %d\n", sandworm->pos.row, sandworm->pos.column);
 }
 
 // 3) 중립 유닛 - 유닛 잡아먹기 함수
@@ -676,7 +704,7 @@ void make_spice(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	display_system_message(pos, "샌드웜이 배설하여 스파이스 매장지가 생성되었습니다!\n");
 }
 
-// 3) 중립 유닛 - 샌드웜 행동 종합적으로 호출
+// 3) 중립 유닛 - 샌드웜 행동 종합적으로 호출 함수
 void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE* sandworm) {
 	for (int i = 0; i < MAX_OBJECTS; i++) {
 		if (objects[i].repr == 'W') {
@@ -689,18 +717,104 @@ void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE* sa
 				eat_unit(&objects[i]);
 			}
 
-			if (ate_unit && rand() % 20 == 0) { 
+			if (ate_unit && rand() % 50 == 0) { 
 				make_spice(map);
 			}
 		}
 	}
 }
 
-// 3) 중립 유닛 - 샌드웜 이동 업데이트
+// 3) 중립 유닛 - 샌드웜 이동 업데이트 함수
 void update_sandworms(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	for (int i = 0; i < unit_count; i++) {
 		if (objects[i].repr == 'W') { 
 			sandworm_action(map, &objects[i]);
 		}
+	}
+}
+
+// 4) 유닛 1기 생산 - 위치 찾기 함수
+POSITION find_building_pos(char building) {
+	for (int i = 0; i < MAX_OBJECTS; i++) {
+		if (objects[i].repr == building) {
+			return objects[i].pos;
+		}
+	}
+	POSITION invalid_pos = { -1, -1 };  // 의도적으로 유효하지 않은 위치를 반환하도록
+	return invalid_pos;
+}
+
+// 4) 유닛 1기 생산 - 빈 공간 찾기 함수
+POSITION find_empty_pos(POSITION building_pos) {
+	POSITION empty_pos = { -1, -1 };
+
+	int dir[4][2] = { {0,1}, {1,0}, {0, -1}, {-1,0} };
+	for (int i = 0; i < 4; i++) {
+		int new_row = building_pos.row + dir[i][0];
+		int new_col = building_pos.column + dir[i][1];
+
+		if (new_row >= 0 && new_row < MAP_HEIGHT &&
+			new_col >= 0 && new_col < MAP_WIDTH && map[1][new_row][new_col] == ' ') {
+			empty_pos.row = new_row;
+			empty_pos.column = new_col;
+			return empty_pos;
+		}
+	}
+	return empty_pos;
+}
+
+// 4) 유닛 1기 생산 - 유닛 생성
+void make_unit(char building, const char* unit_name) {
+	POSITION building_pos = find_building_pos(building);
+	if (building_pos.row == -1) {
+		display_system_message(pos, "No space for placing the unit.\n");
+		return;
+	}
+
+	POSITION unit_pos = find_empty_pos(building_pos);
+	if (unit_pos.row == -1 && unit_pos.column == -1) {
+		display_system_message(pos, "No space for placing the unit.\n");
+		return;
+	}
+
+	map[0][unit_pos.row][unit_pos.column] = unit_name;
+	display_system_message(pos, "A new production is ready.\n");
+}
+
+// 4) 유닛 1기 생산 - Bonus 유닛 생산 취소 함수
+void building_cancel() {
+	make_building_time = -1;
+	display_system_message(pos, "The building has been canceled.\n");
+}
+
+// 4) 유닛 1기 생산 - 단축키 입력 처리 함수
+extern COMMAND_LIST command_list;
+int current_spice = 2;
+
+void handle_command_input(KEY key, char building) {
+	for (int i = 0; i < command_list.command_cnt; i++) {
+		BUILD_COMMAND cmd = command_list.commands[i];
+
+		if (cmd.building == building && cmd.command_k == key) {
+			if (current_spice < cmd.cost) {
+				display_system_message(pos, "Not euogh spice.\n");
+				return;
+			}
+			current_spice -= cmd.cost;
+			make_unit(building, cmd.unit_name);
+
+			int make_building_time = 5; // Bonus) 생산 시간 임의 설정
+			if (make_building_time == 0) {
+				make_unit(cmd.building, cmd.unit_name);
+			}
+			
+			display_system_message(pos, "Production is ready.\n");
+			return;
+		}
+	}
+
+	// Bonus) 생산 취소
+	if (key == 'x') {
+		building_cancel();
 	}
 }
