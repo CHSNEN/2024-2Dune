@@ -94,17 +94,10 @@ typedef struct {
 	int next_move_time;	// 다음에 움직일 시간
 	int speed;
 	int color;
+	int house;			// 0: 중립, 1: 아트레이디스, 2: 하코넨
 } OBJECT_SAMPLE;
 
 extern char system_message[200];
-
-// 3) 중립 유닛 - 샌드웜 이동용 구조체
-typedef struct {
-	POSITION pos;	// 현재 위치
-	POSITION dest;	// 목적지
-	int speed;		// 이동 속도
-	char repr;		// 샌드웜 표시
-} UNIT;
 
 extern OBJECT_SAMPLE objects[MAX_OBJECTS];
 

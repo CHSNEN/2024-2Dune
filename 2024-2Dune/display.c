@@ -38,7 +38,9 @@ void reset_color() {
 void display_system_message(POSITION pos, const char* system_message);
 void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION object_pos);
 void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
-void handle_input(int key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
+void init_set_col_map(int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
+
+void handle_input(KEY key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE objects[MAX_OBJECTS]);
 
 
@@ -56,6 +58,8 @@ void display(
 	display_object_info(map, cursor, object_pos);
 	display_commands(map);
 	display_system_message(pos, system_message);
+
+	init_set_col_map(set_col_map, map);
 
 	handle_input(key, &cursor, map);
 
@@ -87,12 +91,18 @@ void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP
 }
 
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	init_set_col_map(set_col_map, map);
 	project(map, backbuf);
+
+	for (int i = 0; i < MAX_OBJECTS; i++) {
+		gotoxy(objects[i].pos);
+		printf("%c", objects[i].repr);
+	}
 
 	for (int i = 0; i < MAP_HEIGHT; i++) {
 		// gotoxy((POSITION) { i + 1, 0 });
 		for (int j = 0; j < MAP_WIDTH; j++) {
-			gotoxy((POSITION) { i + 1, j });
+			gotoxy((POSITION) { i + map_pos.row, j + map_pos.column });
 			char element = backbuf[i][j];
 			int color = set_col_map[0][i][j];
 
@@ -399,52 +409,55 @@ void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 */
 OBJECT_SAMPLE objects[MAX_OBJECTS] = {
 	// ATREIDES B
-	{{MAP_HEIGHT - 3, 1},{MAP_HEIGHT - 3, 1}, 'B', 0, 0, 0, COLOR_ATREIDES},
-	{{MAP_HEIGHT - 3, 2},{MAP_HEIGHT - 3, 2}, 'B', 0, 0, 0, COLOR_ATREIDES},
-	{{MAP_HEIGHT - 2, 1},{MAP_HEIGHT - 2, 1}, 'B', 0, 0, 0, COLOR_ATREIDES},
-	{{MAP_HEIGHT - 2, 2},{MAP_HEIGHT - 2, 2}, 'B', 0, 0, 0, COLOR_ATREIDES},
+	{{MAP_HEIGHT - 3, 1},{MAP_HEIGHT - 3, 1}, 'B', 0, 0, 0, COLOR_ATREIDES, 1},
+	{{MAP_HEIGHT - 3, 2},{MAP_HEIGHT - 3, 2}, 'B', 0, 0, 0, COLOR_ATREIDES, 1},
+	{{MAP_HEIGHT - 2, 1},{MAP_HEIGHT - 2, 1}, 'B', 0, 0, 0, COLOR_ATREIDES, 1},
+	{{MAP_HEIGHT - 2, 2},{MAP_HEIGHT - 2, 2}, 'B', 0, 0, 0, COLOR_ATREIDES, 1},
 
 	// ATREIDES P
-	{{MAP_HEIGHT - 3, 3},{MAP_HEIGHT - 3, 3}, 'P', 0, 0, 0, COLOR_PLATE},
-	{{MAP_HEIGHT - 3, 4},{MAP_HEIGHT - 3, 4}, 'P', 0, 0, 0, COLOR_PLATE},
-	{{MAP_HEIGHT - 2, 3},{MAP_HEIGHT - 2, 3}, 'P', 0, 0, 0, COLOR_PLATE},
-	{{MAP_HEIGHT - 2, 4},{MAP_HEIGHT - 3, 4}, 'P', 0, 0, 0, COLOR_PLATE},
+	{{MAP_HEIGHT - 3, 3},{MAP_HEIGHT - 3, 3}, 'P', 0, 0, 0, COLOR_PLATE, 0},
+	{{MAP_HEIGHT - 3, 4},{MAP_HEIGHT - 3, 4}, 'P', 0, 0, 0, COLOR_PLATE, 0},
+	{{MAP_HEIGHT - 2, 3},{MAP_HEIGHT - 2, 3}, 'P', 0, 0, 0, COLOR_PLATE, 0},
+	{{MAP_HEIGHT - 2, 4},{MAP_HEIGHT - 3, 4}, 'P', 0, 0, 0, COLOR_PLATE, 0},
 
 	// ATREIDES H
-	{{MAP_HEIGHT - 4, 1},{MAP_HEIGHT - 4, 1}, 'H', 0, 0, 0, COLOR_ATREIDES},
+	{{MAP_HEIGHT - 4, 1},{MAP_HEIGHT - 4, 1}, 'H', 0, 0, 0, COLOR_ATREIDES, 1},
 
 	// HARKONNEN B
-	{{1, MAP_WIDTH - 3}, {1, MAP_WIDTH - 3}, 'B', 0, 0, 0, COLOR_HARKONNEN},
-	{{2, MAP_WIDTH - 3}, {2, MAP_WIDTH - 3}, 'B', 0, 0, 0, COLOR_HARKONNEN},
-	{{1, MAP_WIDTH - 2}, {1, MAP_WIDTH - 2}, 'B', 0, 0, 0, COLOR_HARKONNEN},
-	{{2, MAP_WIDTH - 2}, {2, MAP_WIDTH - 2}, 'B', 0, 0, 0, COLOR_HARKONNEN},
+	{{1, MAP_WIDTH - 3}, {1, MAP_WIDTH - 3}, 'B', 0, 0, 0, COLOR_HARKONNEN, 2},
+	{{2, MAP_WIDTH - 3}, {2, MAP_WIDTH - 3}, 'B', 0, 0, 0, COLOR_HARKONNEN, 2},
+	{{1, MAP_WIDTH - 2}, {1, MAP_WIDTH - 2}, 'B', 0, 0, 0, COLOR_HARKONNEN, 2},
+	{{2, MAP_WIDTH - 2}, {2, MAP_WIDTH - 2}, 'B', 0, 0, 0, COLOR_HARKONNEN, 2},
 
 	// HARKONNEN P
-	{{1, MAP_WIDTH - 4}, {1, MAP_WIDTH - 4}, 'P', 0, 0, 0, COLOR_PLATE},
-	{{2, MAP_WIDTH - 4}, {2, MAP_WIDTH - 4}, 'P', 0, 0, 0, COLOR_PLATE},
-	{{1, MAP_WIDTH - 5}, {1, MAP_WIDTH - 5}, 'P', 0, 0, 0, COLOR_PLATE},
-	{{2, MAP_WIDTH - 5}, {2, MAP_WIDTH - 5}, 'P', 0, 0, 0, COLOR_PLATE},
+	{{1, MAP_WIDTH - 4}, {1, MAP_WIDTH - 4}, 'P', 0, 0, 0, COLOR_PLATE, 0},
+	{{2, MAP_WIDTH - 4}, {2, MAP_WIDTH - 4}, 'P', 0, 0, 0, COLOR_PLATE, 0},
+	{{1, MAP_WIDTH - 5}, {1, MAP_WIDTH - 5}, 'P', 0, 0, 0, COLOR_PLATE, 0},
+	{{2, MAP_WIDTH - 5}, {2, MAP_WIDTH - 5}, 'P', 0, 0, 0, COLOR_PLATE, 0},
 
 	// HARKONNEN H
-	{{3, MAP_WIDTH - 3}, {3, MAP_WIDTH - 3}, 'H', 0, 0, 0, COLOR_HARKONNEN},
+	{{3, MAP_WIDTH - 3}, {3, MAP_WIDTH - 3}, 'H', 0, 0, 0, COLOR_HARKONNEN, 2},
 
 	// SPICE
-	{{MAP_HEIGHT - 4, 3}, {MAP_HEIGHT - 4, 3}, 'S', 0, 0, 0, COLOR_SPICE},
-	{{3, MAP_WIDTH - 4}, {3, MAP_WIDTH - 4}, 'S', 0, 0, 0, COLOR_SPICE},
+	{{MAP_HEIGHT - 4, 3}, {MAP_HEIGHT - 4, 3}, 'S', 0, 0, 0, COLOR_SPICE, 0},
+	{{3, MAP_WIDTH - 4}, {3, MAP_WIDTH - 4}, 'S', 0, 0, 0, COLOR_SPICE, 0},
 
 	// SANDWORM
-	{{13, 24}, {0, 0}, 'W', 100000, 0, 1, COLOR_SANDWORM},
-	{{7, 56}, {0, 0}, 'W', 100000, 0, 1, COLOR_SANDWORM},
+	{{13, 24}, {0, 0}, 'W', 1000, 0, 1, COLOR_SANDWORM, 0},
+	{{7, 56}, {0, 0}, 'W', 1000, 0, 1, COLOR_SANDWORM, 0},
 
 	// ROCK
-	{{5, 5}, {5, 5}, 'R', 0, 0, 0, COLOR_ROCK},
-	{{6, 6}, {6, 6}, 'R', 0, 0, 0, COLOR_ROCK},
-	{{6, 7}, {6, 7}, 'R', 0, 0, 0, COLOR_ROCK},
-	{{7, 6}, {7, 6}, 'R', 0, 0, 0, COLOR_ROCK},
-	{{7, 7}, {7, 7}, 'R', 0, 0, 0, COLOR_ROCK}
+	{{16, 42}, {16, 42}, 'R', 0, 0, 0, COLOR_ROCK, 0},
+	{{16, 43}, {16, 43}, 'R', 0, 0, 0, COLOR_ROCK, 0},
+	{{17, 42}, {17, 42}, 'R', 0, 0, 0, COLOR_ROCK, 0},
+	{{17, 43}, {17, 43}, 'R', 0, 0, 0, COLOR_ROCK, 0},
+	{{6, 6}, {6, 6}, 'R', 0, 0, 0, COLOR_ROCK, 0},
+	{{6, 7}, {6, 7}, 'R', 0, 0, 0, COLOR_ROCK, 0},
+	{{7, 6}, {7, 6}, 'R', 0, 0, 0, COLOR_ROCK, 0},
+	{{7, 7}, {7, 7}, 'R', 0, 0, 0, COLOR_ROCK, 0}
 };
 
-int object_count = 26;
+int object_count = 30;
 int unit_count = 4;
 
 // 1) ÁØºñ - »ö»ó Àû¿ë ÇÔ¼ö
@@ -457,14 +470,15 @@ void init_set_col_map(int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char map[
 			}
 		}
 	}
+
 	for (int i = 0; i < MAX_OBJECTS; i++) {
 		int row = objects[i].pos.row;
 		int col = objects[i].pos.column;
 
-		if (objects[i].repr == 'B' || objects[i].repr == 'P' || objects[i].repr == 'H') {
+		if (objects[i].house == 1) {
 			set_col_map[0][row][col] = COLOR_ATREIDES;
 		}
-		else if (objects[i].repr == 'W' || objects[i].repr == 'T' || objects[i].repr == 'C') {
+		else if (objects[i].house == 2) {
 			set_col_map[0][row][col] = COLOR_HARKONNEN;
 		}
 		else {
@@ -598,16 +612,19 @@ void handle_input(int key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WID
 }
 
 // 3) Áß¸³ À¯´Ö - °¡±î¿î À¯´Ö °¨Áö ÇÔ¼ö
-OBJECT_SAMPLE sandworm = { {13, 24}, {0, 0}, 'W', 1000, 0, 1, COLOR_SANDWORM };
+// OBJECT_SAMPLE sandworm = { {13, 24}, {0, 0}, 'W', 1000, 0, 1, COLOR_SANDWORM };
 
 POSITION find_near_unit(POSITION sandworm_pos) {
-	POSITION near_unit = objects[0].pos;
-	int min_distance = abs(sandworm_pos.row - objects[0].pos.row)
-		+ abs(sandworm_pos.column - objects[0].pos.column);
+	POSITION near_unit = { -1, -1 };
+	int min_distance = MAP_HEIGHT + MAP_WIDTH;
 
 	for (int i = 1; i < unit_count; i++) {
+		if (objects[i].repr == 'W')
+			continue;
+
 		int distance = abs(sandworm_pos.row - objects[i].pos.row)
 			+ abs(sandworm_pos.column - objects[i].pos.column);
+		
 		if (distance < min_distance) {
 			min_distance = distance;
 			near_unit = objects[i].pos;
@@ -621,28 +638,32 @@ void move_to_near(OBJECT_SAMPLE* sandworm, POSITION target) {
 	if (sandworm->pos.row < target.row) {
 		sandworm->pos.row++;
 	}
-	else if (sandworm->pos.row < target.row) {
+	else if (sandworm->pos.row > target.row) {
 		sandworm->pos.row--;
 	}
 	if (sandworm->pos.column < target.column) {
 		sandworm->pos.column++;
 	}
-	else if (sandworm->pos.column < target.column) {
+	else if (sandworm->pos.column > target.column) {
 		sandworm->pos.column--;
 	}
+
+	printf("Sandworm moved to row: %d, column: %d\n", sandworm->pos.row, sandworm->pos.column);
 }
 
 // 3) Áß¸³ À¯´Ö - À¯´Ö Àâ¾Æ¸Ô±â ÇÔ¼ö
 void eat_unit(OBJECT_SAMPLE* sandworm) {
 	for (int i = 0; i < unit_count; i++) {
 		if (sandworm->pos.row == objects[i].pos.row && sandworm->pos.column == objects[i].pos.column) {
-			for (int j = i; j < unit_count - 1;j++) {
-				objects[j] = objects[j + 1];
-			}
-			unit_count--;
+			if (objects[i].repr != 'W') {
+				for (int j = i; j < unit_count - 1;j++) {
+					objects[j] = objects[j + 1];
+				}
+				unit_count--;
 
-			display_system_message(pos, "»÷µå¿úÀÌ À¯´ÖÀ» Àâ¾Æ¸Ô¾ú½À´Ï´Ù!\n");
-			break;
+				display_system_message(sandworm->pos, "»÷µå¿úÀÌ À¯´ÖÀ» Àâ¾Æ¸Ô¾ú½À´Ï´Ù!\n");
+				break;
+			}
 		}
 	}
 }
@@ -657,12 +678,29 @@ void make_spice(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 
 // 3) Áß¸³ À¯´Ö - »÷µå¿ú Çàµ¿ Á¾ÇÕÀûÀ¸·Î È£Ãâ
 void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE* sandworm) {
-	POSITION near_unit_pos = find_near_unit(sandworm->pos);
-	sandworm->dest = near_unit_pos;
+	for (int i = 0; i < MAX_OBJECTS; i++) {
+		if (objects[i].repr == 'W') {
+			POSITION target = find_near_unit(objects[i].pos);
+			move_to_near(&objects[i], target);
 
-	move_to_near(&sandworm, sandworm->dest);
-	eat_unit(sandworm);
-	if (rand() % 1000 == 0) {
-		make_spice(map);
+			bool ate_unit = false;
+			if (objects[i].pos.row == target.row && objects[i].pos.column == target.column) {
+				ate_unit = true;
+				eat_unit(&objects[i]);
+			}
+
+			if (ate_unit && rand() % 20 == 0) { 
+				make_spice(map);
+			}
+		}
+	}
+}
+
+// 3) Áß¸³ À¯´Ö - »÷µå¿ú ÀÌµ¿ ¾÷µ¥ÀÌÆ®
+void update_sandworms(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	for (int i = 0; i < unit_count; i++) {
+		if (objects[i].repr == 'W') { 
+			sandworm_action(map, &objects[i]);
+		}
 	}
 }
