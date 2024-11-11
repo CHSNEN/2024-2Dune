@@ -110,13 +110,8 @@ typedef struct {
 	int cost;				// 생산에 필요한 자원
 	const char* unit_name;	// 생산될 유닛 이름
 	int house;				// 0: 중립, 1: 아트레이디스, 2: 하코넨
+	OBJECT_SAMPLE pos;
 } BUILD_COMMAND;
-
-// 4) 유닛 1기 생산 - 명령어 목록 정리용 구조체
-typedef struct {
-	BUILD_COMMAND commands[MAX_COMMANDS];
-	int command_cnt;
-} COMMAND_LIST;
 
 extern char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH];
 

@@ -30,17 +30,6 @@ POSITION pos = { MAP_HEIGHT + 2, 0 };
 // 아트레디이스, 하코넨 등 색상을 구분할 배열 정의
 int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
 
-// 4) 유닛 1기 생산 - 단축키 목록
-COMMAND_LIST command_list;
-void init_commands() {
-	command_list.command_cnt = 5;
-	command_list.commands[0] = (BUILD_COMMAND){ 'B', 'H', 0, "Harvester", 0 };
-	command_list.commands[1] = (BUILD_COMMAND){ 'B', 'S', 4, "Soldier", 1 };
-	command_list.commands[2] = (BUILD_COMMAND){ 'S', 'F', 5, "Fremen", 1 };
-	command_list.commands[3] = (BUILD_COMMAND){ 'A','F', 3, "Fighter", 2 };
-	command_list.commands[4] = (BUILD_COMMAND){ 'F', 'T', 5, "Heavy Tank", 2 };
-}
-
 // 4) 유닛 1기 생산 - Bonus 생산 시간
 int make_building_time = -1;
 
@@ -54,35 +43,40 @@ void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor
 void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void init_set_col_map(int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 
-void handle_input(KEY key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
+void handle_input(KEY get_key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE objects[MAX_OBJECTS]);
-void handle_command_input(KEY key, char building);
+void handle_command_input(KEY get_key, BUILD_COMMAND* command);
 
 void display(
 	RESOURCE resource,
 	char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH],
 	CURSOR cursor,
 	OBJECT_SAMPLE objects[MAX_OBJECTS], 
-	KEY key)
+	KEY get_key,
+	BUILD_COMMAND command[MAX_COMMANDS])
 {
 	display_resource(resource);
 	display_map(map, set_col_map);
 	display_cursor(cursor);
 
+	POSITION object_pos;
 	display_object_info(map, cursor, object_pos);
 	display_commands(map);
+	POSITION pos;
 	display_system_message(pos, system_message);
 
 	init_set_col_map(set_col_map, map);
 
-	handle_input(key, &cursor, map);
+	handle_input(get_key, &cursor, map);
 
 	sandworm_action(map, objects);
 
-	int building_idx = find_building_pos(key);
-	if (building_idx != -1) {  // 유효한 명령어가 있을 때만 실행
-		handle_command_input(key, command_list.commands[building_idx]);
+	/*
+	POSITION building_idx_pos = find_building_pos(get_key, &command);
+	if (building_idx_pos.row != -1 && building_idx_pos.column != -1) {  // 유효한 명령어가 있을 때만 실행
+		handle_command_input(get_key, &command[building_idx_pos.row]);
 	}
+	*/
 }
 
 void display_resource(RESOURCE resource) {
@@ -157,129 +151,6 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 		reset_color();
 		printf("\n");
 	}
-
-	/*
-	for (int i = 0; i < MAX_OBJECTS; i++) {
-		gotoxy((POSITION) { objects[i].pos.row + 1, objects[i].pos.column + 1 });
-		set_color(set_col_map[1][objects[i].pos.row][objects[i].pos.column]);
-		printf("%c", objects[i].repr);
-	}
-	*/
-
-	/*
-	// 맵 테두리 '#'
-	for (int i = 0; i < MAP_HEIGHT; i++) {
-		set_color(COLOR_DEFAULT);
-		map[1][i][0] = '#';
-		map[1][i][MAP_WIDTH - 1] = '#';
-		for (int j = 0; j < MAP_WIDTH; j++) {
-			map[1][0][j] = '#';
-			map[1][MAP_HEIGHT - 1][j] = '#';
-		}
-	}
-
-	for (int i = 0; i < MAP_HEIGHT; i++) {
-		for (int j = 0; j < MAP_WIDTH; j++) {
-			if (frontbuf[i][j] != backbuf[i][j]) {
-				POSITION pos = { i, j };
-
-				// 색상 적용
-				int set_col = set_col_map[0][i][j];
-				for (int layer = 0; layer < N_LAYER; layer++) {
-					if (set_col_map[layer][i][j] != COLOR_DEFAULT) {
-						set_col = set_col_map[layer][i][j];
-					}
-				}
-				set_color(set_col);
-
-				printc(padd(map_pos, pos), backbuf[i][j], set_col);
-			}
-			frontbuf[i][j] = backbuf[i][j];
-		}
-	}
-	reset_color();
-	*/
-
-	// 사막: 기본 지형(빈 칸)
-	/*
-	for (int i = 0; i < MAP_HEIGHT; i++) {
-		for (int j = 0; j < MAP_WIDTH; j++) {
-			map[0][i][j] = ' ';
-		}
-	}
-	*/
-
-	// 건물, 지형(B, P, S, R)은 layer 0
-	// 유닛(H, W)은 layer 1
-	/*
-	// 아트레이디스 본진, 장판, 하베스터
-	map[0][MAP_HEIGHT - 3][1] = 'B';
-	map[0][MAP_HEIGHT - 3][2] = 'B';
-	map[0][MAP_HEIGHT - 2][1] = 'B';
-	map[0][MAP_HEIGHT - 2][2] = 'B';
-	set_col_map[0][MAP_HEIGHT - 3][1] = COLOR_ATREIDES;
-	set_col_map[0][MAP_HEIGHT - 3][2] = COLOR_ATREIDES;
-	set_col_map[0][MAP_HEIGHT - 2][1] = COLOR_ATREIDES;
-	set_col_map[0][MAP_HEIGHT - 2][2] = COLOR_ATREIDES;
-
-	map[0][MAP_HEIGHT - 3][3] = 'P';
-	map[0][MAP_HEIGHT - 3][4] = 'P';
-	map[0][MAP_HEIGHT - 2][3] = 'P';
-	map[0][MAP_HEIGHT - 2][4] = 'P';
-	set_col_map[0][MAP_HEIGHT - 3][3] = COLOR_PLATE;
-	set_col_map[0][MAP_HEIGHT - 3][4] = COLOR_PLATE;
-	set_col_map[0][MAP_HEIGHT - 2][3] = COLOR_PLATE;
-	set_col_map[0][MAP_HEIGHT - 2][4] = COLOR_PLATE;
-
-	map[1][MAP_HEIGHT - 4][1] = 'H';
-	set_col_map[1][MAP_HEIGHT - 4][1] = COLOR_ATREIDES;
-
-	// 하코넨 본진, 장판, 하베스터
-	map[0][1][MAP_WIDTH - 3] = 'B';
-	map[0][2][MAP_WIDTH - 3] = 'B';
-	map[0][1][MAP_WIDTH - 2] = 'B';
-	map[0][2][MAP_WIDTH - 2] = 'B';
-	set_col_map[0][1][MAP_WIDTH - 3] = COLOR_HARKONNEN;
-	set_col_map[0][2][MAP_WIDTH - 3] = COLOR_HARKONNEN;
-	set_col_map[0][1][MAP_WIDTH - 2] = COLOR_HARKONNEN;
-	set_col_map[0][2][MAP_WIDTH - 2] = COLOR_HARKONNEN;
-
-	map[0][1][MAP_WIDTH - 4] = 'P';
-	map[0][2][MAP_WIDTH - 4] = 'P';
-	map[0][1][MAP_WIDTH - 5] = 'P';
-	map[0][2][MAP_WIDTH - 5] = 'P';
-	set_col_map[0][1][MAP_WIDTH - 4] = COLOR_PLATE;
-	set_col_map[0][2][MAP_WIDTH - 4] = COLOR_PLATE;
-	set_col_map[0][1][MAP_WIDTH - 5] = COLOR_PLATE;
-	set_col_map[0][2][MAP_WIDTH - 5] = COLOR_PLATE;
-
-	map[1][3][MAP_WIDTH - 2] = 'H';
-	set_col_map[1][3][MAP_WIDTH - 2] = COLOR_HARKONNEN;
-
-	// 스파이스
-	map[0][MAP_HEIGHT - 4][3] = 'S';
-	map[0][3][MAP_WIDTH - 4] = 'S';
-	set_col_map[0][MAP_HEIGHT - 4][3] = COLOR_SPICE;
-	set_col_map[0][3][MAP_WIDTH - 4] = COLOR_SPICE;
-
-	// 샌드웜
-	map[1][13][24] = 'W';
-	map[1][7][56] = 'W';
-	set_col_map[1][13][24] = COLOR_SANDWORM;
-	set_col_map[1][7][56] = COLOR_SANDWORM;
-
-	// 바위
-	map[0][5][5] = 'R';
-	map[0][6][6] = 'R';
-	map[0][6][7] = 'R';
-	map[0][7][6] = 'R';
-	map[0][7][7] = 'R';
-	set_col_map[0][5][5] = COLOR_ROCK;
-	set_col_map[0][6][6] = COLOR_ROCK;
-	set_col_map[0][6][7] = COLOR_ROCK;
-	set_col_map[0][7][6] = COLOR_ROCK;
-	set_col_map[0][7][7] = COLOR_ROCK;
-	*/
 }
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력
@@ -354,87 +225,6 @@ void display_commands(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 }
 
 // 1) 준비 - 초기 상태 초기 배치 함수
-/*
-void init_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
-	// 사막: 기본 지형(빈 칸)
-	for (int i = 0; i < MAP_HEIGHT; i++) {
-		for (int j = 0; j < MAP_WIDTH; j++) {
-			map[0][i][j] = ' ';
-		}
-	}
-
-	// 건물, 지형(B, P, S, R)은 layer 0
-	// 유닛(H, W)은 layer 1
-	
-	// 아트레이디스 본진, 장판, 하베스터
-	map[0][MAP_HEIGHT - 3][1] = 'B';
-	map[0][MAP_HEIGHT - 3][2] = 'B';
-	map[0][MAP_HEIGHT - 2][1] = 'B';
-	map[0][MAP_HEIGHT - 2][2] = 'B';
-	set_col_map[0][MAP_HEIGHT - 3][1] = COLOR_ATREIDES;
-	set_col_map[0][MAP_HEIGHT - 3][2] = COLOR_ATREIDES;
-	set_col_map[0][MAP_HEIGHT - 2][1] = COLOR_ATREIDES;
-	set_col_map[0][MAP_HEIGHT - 2][2] = COLOR_ATREIDES;
-
-	map[0][MAP_HEIGHT - 3][3] = 'P';
-	map[0][MAP_HEIGHT - 3][4] = 'P';
-	map[0][MAP_HEIGHT - 2][3] = 'P';
-	map[0][MAP_HEIGHT - 2][4] = 'P';
-	set_col_map[0][MAP_HEIGHT - 3][3] = COLOR_PLATE;
-	set_col_map[0][MAP_HEIGHT - 3][4] = COLOR_PLATE;
-	set_col_map[0][MAP_HEIGHT - 2][3] = COLOR_PLATE;
-	set_col_map[0][MAP_HEIGHT - 2][4] = COLOR_PLATE;
-
-	map[1][MAP_HEIGHT - 4][1] = 'H';
-	set_col_map[1][MAP_HEIGHT - 4][1] = COLOR_ATREIDES;
-
-	// 하코넨 본진, 장판, 하베스터
-	map[0][1][MAP_WIDTH - 3] = 'B';
-	map[0][2][MAP_WIDTH - 3] = 'B';
-	map[0][1][MAP_WIDTH - 2] = 'B';
-	map[0][2][MAP_WIDTH - 2] = 'B';
-	set_col_map[0][1][MAP_WIDTH - 3] = COLOR_HARKONNEN;
-	set_col_map[0][2][MAP_WIDTH - 3] = COLOR_HARKONNEN;
-	set_col_map[0][1][MAP_WIDTH - 2] = COLOR_HARKONNEN;
-	set_col_map[0][2][MAP_WIDTH - 2] = COLOR_HARKONNEN;
-
-	map[0][1][MAP_WIDTH - 4] = 'P';
-	map[0][2][MAP_WIDTH - 4] = 'P';
-	map[0][1][MAP_WIDTH - 5] = 'P';
-	map[0][2][MAP_WIDTH - 5] = 'P';
-	set_col_map[0][1][MAP_WIDTH - 4] = COLOR_PLATE;
-	set_col_map[0][2][MAP_WIDTH - 4] = COLOR_PLATE;
-	set_col_map[0][1][MAP_WIDTH - 5] = COLOR_PLATE;
-	set_col_map[0][2][MAP_WIDTH - 5] = COLOR_PLATE;
-
-	map[1][3][MAP_WIDTH - 2] = 'H';
-	set_col_map[1][3][MAP_WIDTH - 2] = COLOR_HARKONNEN;
-
-	// 스파이스
-	map[0][MAP_HEIGHT - 4][3] = 'S';
-	map[0][3][MAP_WIDTH - 4] = 'S';
-	set_col_map[0][MAP_HEIGHT - 4][3] = COLOR_SPICE;
-	set_col_map[0][3][MAP_WIDTH - 4] = COLOR_SPICE;
-
-	// 샌드웜
-	map[1][13][24] = 'W';
-	map[1][7][56] = 'W';
-	set_col_map[1][13][24] = COLOR_SANDWORM;
-	set_col_map[1][7][56] = COLOR_SANDWORM;
-
-	// 바위
-	map[0][5][5] = 'R';
-	map[0][6][6] = 'R';
-	map[0][6][7] = 'R';
-	map[0][7][6] = 'R';
-	map[0][7][7] = 'R';
-	set_col_map[0][5][5] = COLOR_ROCK;
-	set_col_map[0][6][6] = COLOR_ROCK;
-	set_col_map[0][6][7] = COLOR_ROCK;
-	set_col_map[0][7][6] = COLOR_ROCK;
-	set_col_map[0][7][7] = COLOR_ROCK;
-}
-*/
 OBJECT_SAMPLE objects[MAX_OBJECTS] = {
 	// ATREIDES B
 	{{MAP_HEIGHT - 3, 1},{MAP_HEIGHT - 3, 1}, 'B', 0, 0, 0, COLOR_ATREIDES, 1},
@@ -487,6 +277,9 @@ OBJECT_SAMPLE objects[MAX_OBJECTS] = {
 
 int object_count = 30;
 int unit_count = 4;
+// 3), 4) 에서 사용될 현재 스파이스 매장지 업데이트용 변수
+int current_spice = 2;
+
 
 // 1) 준비 - 색상 적용 함수
 void init_set_col_map(int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
@@ -700,6 +493,7 @@ void eat_unit(OBJECT_SAMPLE* sandworm) {
 void make_spice(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	POSITION spice_pos = { rand() % MAP_HEIGHT, rand() % MAP_WIDTH };
 	map[1][spice_pos.row][spice_pos.column] = 'S';
+	current_spice++;
 
 	display_system_message(pos, "샌드웜이 배설하여 스파이스 매장지가 생성되었습니다!\n");
 }
@@ -719,6 +513,7 @@ void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE* sa
 
 			if (ate_unit && rand() % 50 == 0) { 
 				make_spice(map);
+				current_spice++;
 			}
 		}
 	}
@@ -733,25 +528,35 @@ void update_sandworms(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	}
 }
 
+// 4) 유닛 1기 생산 - 단축키 목록
+BUILD_COMMAND command[] = {
+	{ 'B', 'H', 0, "Harvester", 0 },
+	{ 'B', 'S', 4, "Soldier", 1 },
+	{ 'S', 'F', 5, "Fremen", 1 },
+	{ 'A','F', 3, "Fighter", 2 },
+	{ 'F', 'T', 5, "Heavy Tank", 2 }
+};
+
 // 4) 유닛 1기 생산 - 위치 찾기 함수
-POSITION find_building_pos(char building) {
-	for (int i = 0; i < MAX_OBJECTS; i++) {
-		if (objects[i].repr == building) {
-			return objects[i].pos;
+POSITION find_building_pos(KEY get_key, BUILD_COMMAND command[]) {
+	POSITION pos = { -1, -1 };
+	for (int i = 0; i < sizeof(command) / sizeof(command[0]); i++) {
+		if (command[i].command_k == get_key) {
+			pos = command[i].pos;
+			return pos;
 		}
 	}
-	POSITION invalid_pos = { -1, -1 };  // 의도적으로 유효하지 않은 위치를 반환하도록
-	return invalid_pos;
+	return pos;
 }
 
 // 4) 유닛 1기 생산 - 빈 공간 찾기 함수
-POSITION find_empty_pos(POSITION building_pos) {
+POSITION find_empty_pos(POSITION find_building_pos) {
 	POSITION empty_pos = { -1, -1 };
 
 	int dir[4][2] = { {0,1}, {1,0}, {0, -1}, {-1,0} };
 	for (int i = 0; i < 4; i++) {
-		int new_row = building_pos.row + dir[i][0];
-		int new_col = building_pos.column + dir[i][1];
+		int new_row = find_building_pos.row + dir[i][0];
+		int new_col = find_building_pos.column + dir[i][1];
 
 		if (new_row >= 0 && new_row < MAP_HEIGHT &&
 			new_col >= 0 && new_col < MAP_WIDTH && map[1][new_row][new_col] == ' ') {
@@ -764,21 +569,27 @@ POSITION find_empty_pos(POSITION building_pos) {
 }
 
 // 4) 유닛 1기 생산 - 유닛 생성
-void make_unit(char building, const char* unit_name) {
-	POSITION building_pos = find_building_pos(building);
-	if (building_pos.row == -1) {
-		display_system_message(pos, "No space for placing the unit.\n");
-		return;
-	}
+void make_unit(KEY get_key, BUILD_COMMAND command[]) {
+	POSITION building_pos = find_building_pos(get_key, command);
+	POSITION pos;
 
-	POSITION unit_pos = find_empty_pos(building_pos);
-	if (unit_pos.row == -1 && unit_pos.column == -1) {
-		display_system_message(pos, "No space for placing the unit.\n");
-		return;
-	}
+	for (int i = 0; i < i < sizeof(command) / sizeof(command[0]); i++) {
+		if (get_key == command->command_k) {
+			if (building_pos.row == -1 && building_pos.column == -1) {
+				display_system_message(pos, "No space for placing the unit.\n");
+				return;
+			}
 
-	map[0][unit_pos.row][unit_pos.column] = unit_name;
-	display_system_message(pos, "A new production is ready.\n");
+			POSITION unit_pos = find_empty_pos(building_pos);
+			if (unit_pos.row == -1 && unit_pos.column == -1) {
+				display_system_message(pos, "No space for placing the unit.\n");
+				return;
+			}
+
+			map[0][unit_pos.row][unit_pos.column] = command[i]->unit_name;
+			display_system_message(pos, "A new production is ready.\n");
+		}
+	}
 }
 
 // 4) 유닛 1기 생산 - Bonus 유닛 생산 취소 함수
@@ -788,24 +599,20 @@ void building_cancel() {
 }
 
 // 4) 유닛 1기 생산 - 단축키 입력 처리 함수
-extern COMMAND_LIST command_list;
-int current_spice = 2;
-
-void handle_command_input(KEY key, char building) {
-	for (int i = 0; i < command_list.command_cnt; i++) {
-		BUILD_COMMAND cmd = command_list.commands[i];
-
-		if (cmd.building == building && cmd.command_k == key) {
-			if (current_spice < cmd.cost) {
+void handle_command_input(KEY get_key, BUILD_COMMAND* command) {
+	return current_spice;
+	for (int i = 0; i < sizeof(command) / sizeof(command[0]); i++) {
+		if (command[i].command_k == get_key) {
+			if (current_spice < command[i].cost) {
 				display_system_message(pos, "Not euogh spice.\n");
 				return;
 			}
-			current_spice -= cmd.cost;
-			make_unit(building, cmd.unit_name);
+			current_spice -= command[i].cost;
+			make_unit(get_key, &command);
 
 			int make_building_time = 5; // Bonus) 생산 시간 임의 설정
 			if (make_building_time == 0) {
-				make_unit(cmd.building, cmd.unit_name);
+				make_unit(get_key, &command);
 			}
 			
 			display_system_message(pos, "Production is ready.\n");
@@ -814,7 +621,7 @@ void handle_command_input(KEY key, char building) {
 	}
 
 	// Bonus) 생산 취소
-	if (key == 'x') {
+	if (get_key == 'x') {
 		building_cancel();
 	}
 }
