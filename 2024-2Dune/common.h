@@ -110,7 +110,7 @@ typedef struct {
 	int cost;				// 생산에 필요한 자원
 	const char* unit_name;	// 생산될 유닛 이름
 	int house;				// 0: 중립, 1: 아트레이디스, 2: 하코넨
-	OBJECT_SAMPLE pos;
+	POSITION pos;
 } BUILD_COMMAND;
 
 extern char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH];

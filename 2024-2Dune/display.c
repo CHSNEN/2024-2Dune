@@ -24,8 +24,8 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH],
 	int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void display_cursor(CURSOR cursor);
 
-// 임시방편으로 위치 지정 변수 정의
-POSITION pos = { MAP_HEIGHT + 2, 0 };
+// 위치 지정 변수 정의
+const POSITION message_pos = { MAP_HEIGHT + 2, 0 };
 
 // 아트레디이스, 하코넨 등 색상을 구분할 배열 정의
 int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
@@ -59,11 +59,9 @@ void display(
 	display_map(map, set_col_map);
 	display_cursor(cursor);
 
-	POSITION object_pos;
 	display_object_info(map, cursor, object_pos);
 	display_commands(map);
-	POSITION pos;
-	display_system_message(pos, system_message);
+	display_system_message(message_pos, system_message);
 
 	init_set_col_map(set_col_map, map);
 
@@ -103,8 +101,10 @@ void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP
 }
 
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	gotoxy(map_pos);
 	init_set_col_map(set_col_map, map);
 	project(map, backbuf);
+	set_color(COLOR_DEFAULT);
 
 	for (int i = 0; i < MAX_OBJECTS; i++) {
 		gotoxy(objects[i].pos);
@@ -155,39 +155,44 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력
 void display_cursor(CURSOR cursor) {
+	gotoxy(map_pos);
+	set_color(COLOR_CURSOR);
+
 	POSITION prev = cursor.previous;
 	POSITION curr = cursor.current;
 
+	/*
 	gotoxy(prev);
 	int prev_color = set_col_map[0][prev.row][prev.column];
 	set_color(prev_color);
 	printf("%c", frontbuf[prev.row][prev.column]);
 
 	gotoxy(curr);
-	set_color(COLOR_CURSOR);
-	printf(" ");
+	printf("%c", frontbuf[curr.row][curr.column]);
+	*/
 
-	reset_color();
-
-	/*
+	
+	gotoxy(prev);
 	char ch = frontbuf[prev.row][prev.column];
-	printc(padd(map_pos, prev), ch, set_col_map[0][prev.row][prev.column]);
+	printc(padd(map_pos, prev), ch, COLOR_CURSOR);
 
+	gotoxy(curr);
 	ch = frontbuf[curr.row][curr.column];
 	printc(padd(map_pos, curr), ch, COLOR_CURSOR);
-	*/
+	
 }
 
 // 1) 준비 - 시스템 메시지 표시 함수 + 초기 메시지
 char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
 
-void display_system_message(POSITION pos, const char* system_message) {
+void display_system_message(POSITION message_pos, const char* system_message) {
+	gotoxy(message_pos);
 	static char last_message[200] = "";
 	static int line = 0;
 
 	if (strcmp(last_message, system_message) != 0) {
 		strcpy_s(last_message, sizeof(last_message), system_message);
-		gotoxy((POSITION) { pos.row + line, pos.column });
+		gotoxy((POSITION) { message_pos.row + line, message_pos.column });
 		printf("System: %s", system_message);
 		
 		line++;
@@ -195,13 +200,15 @@ void display_system_message(POSITION pos, const char* system_message) {
 		if (line >= 5) {
 			line = 0;
 		}
+		set_color(COLOR_DEFAULT);
 	}
 }
 
 // 1) 준비 - 상태창 함수
 void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor, POSITION object_pos) {
-	char selected = map[1][cursor.current.row][cursor.current.column];
 	gotoxy(object_pos);
+	char selected = map[1][cursor.current.row][cursor.current.column];
+
 	printf("Selected Object>> %c \n", selected);
 
 	// 4) Bonus) 생산 시간 표시
@@ -209,11 +216,11 @@ void display_object_info(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], CURSOR cursor
 		printf("Production time: %d sec...\n", make_building_time);
 		make_building_time--;
 		if (make_building_time == 0) {
-			display_system_message(pos, "Production is complete!");
+			display_system_message(message_pos, "Production is complete!");
 		}
 	}
 
-	reset_color();
+	set_color(COLOR_DEFAULT);
 }
 
 // 1) 준비 - 명령창 함수
@@ -482,7 +489,7 @@ void eat_unit(OBJECT_SAMPLE* sandworm) {
 				}
 				unit_count--;
 
-				display_system_message(sandworm->pos, "샌드웜이 유닛을 잡아먹었습니다!\n");
+				display_system_message(message_pos, "샌드웜이 유닛을 잡아먹었습니다!\n");
 				break;
 			}
 		}
@@ -495,7 +502,7 @@ void make_spice(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	map[1][spice_pos.row][spice_pos.column] = 'S';
 	current_spice++;
 
-	display_system_message(pos, "샌드웜이 배설하여 스파이스 매장지가 생성되었습니다!\n");
+	display_system_message(message_pos, "샌드웜이 배설하여 스파이스 매장지가 생성되었습니다!\n");
 }
 
 // 3) 중립 유닛 - 샌드웜 행동 종합적으로 호출 함수
@@ -539,14 +546,15 @@ BUILD_COMMAND command[] = {
 
 // 4) 유닛 1기 생산 - 위치 찾기 함수
 POSITION find_building_pos(KEY get_key, BUILD_COMMAND command[]) {
-	POSITION pos = { -1, -1 };
+	POSITION building_pos = { -1, -1 };
 	for (int i = 0; i < sizeof(command) / sizeof(command[0]); i++) {
 		if (command[i].command_k == get_key) {
-			pos = command[i].pos;
-			return pos;
+			building_pos.row = command[i].pos.row;
+			building_pos.column = command[i].pos.column;
+			return building_pos;
 		}
 	}
-	return pos;
+	return building_pos;
 }
 
 // 4) 유닛 1기 생산 - 빈 공간 찾기 함수
@@ -570,24 +578,23 @@ POSITION find_empty_pos(POSITION find_building_pos) {
 
 // 4) 유닛 1기 생산 - 유닛 생성
 void make_unit(KEY get_key, BUILD_COMMAND command[]) {
-	POSITION building_pos = find_building_pos(get_key, command);
-	POSITION pos;
+	POSITION building_pos = { 0, 0 };
 
 	for (int i = 0; i < i < sizeof(command) / sizeof(command[0]); i++) {
 		if (get_key == command->command_k) {
 			if (building_pos.row == -1 && building_pos.column == -1) {
-				display_system_message(pos, "No space for placing the unit.\n");
+				display_system_message(message_pos, "No space for placing the unit.\n");
 				return;
 			}
 
 			POSITION unit_pos = find_empty_pos(building_pos);
 			if (unit_pos.row == -1 && unit_pos.column == -1) {
-				display_system_message(pos, "No space for placing the unit.\n");
+				display_system_message(message_pos, "No space for placing the unit.\n");
 				return;
 			}
 
-			map[0][unit_pos.row][unit_pos.column] = command[i]->unit_name;
-			display_system_message(pos, "A new production is ready.\n");
+			map[0][unit_pos.row][unit_pos.column] = command[i].unit_name;
+			display_system_message(message_pos, "A new production is ready.\n");
 		}
 	}
 }
@@ -595,7 +602,7 @@ void make_unit(KEY get_key, BUILD_COMMAND command[]) {
 // 4) 유닛 1기 생산 - Bonus 유닛 생산 취소 함수
 void building_cancel() {
 	make_building_time = -1;
-	display_system_message(pos, "The building has been canceled.\n");
+	display_system_message(message_pos, "The building has been canceled.\n");
 }
 
 // 4) 유닛 1기 생산 - 단축키 입력 처리 함수
@@ -604,7 +611,7 @@ void handle_command_input(KEY get_key, BUILD_COMMAND* command) {
 	for (int i = 0; i < sizeof(command) / sizeof(command[0]); i++) {
 		if (command[i].command_k == get_key) {
 			if (current_spice < command[i].cost) {
-				display_system_message(pos, "Not euogh spice.\n");
+				display_system_message(message_pos, "Not euogh spice.\n");
 				return;
 			}
 			current_spice -= command[i].cost;
@@ -615,7 +622,7 @@ void handle_command_input(KEY get_key, BUILD_COMMAND* command) {
 				make_unit(get_key, &command);
 			}
 			
-			display_system_message(pos, "Production is ready.\n");
+			display_system_message(message_pos, "Production is ready.\n");
 			return;
 		}
 	}
