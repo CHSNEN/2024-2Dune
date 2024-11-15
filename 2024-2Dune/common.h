@@ -15,7 +15,7 @@
 #define MAP_HEIGHT	18
 
 #define MAX_OBJECTS	100
-#define MAX_COMMANDS 10
+#define MAX_COMMANDS 5
 
 /* ================= 위치와 방향 =================== */
 // 맵에서 위치를 나타내는 구조체
@@ -110,7 +110,7 @@ typedef struct {
 	int cost;				// 생산에 필요한 자원
 	const char* unit_name;	// 생산될 유닛 이름
 	int house;				// 0: 중립, 1: 아트레이디스, 2: 하코넨
-	POSITION pos;
+	POSITION pos;			// 생산될 위치
 } BUILD_COMMAND;
 
 extern char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH];

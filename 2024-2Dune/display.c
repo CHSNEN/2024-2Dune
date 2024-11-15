@@ -45,6 +45,8 @@ void init_set_col_map(int set_col_map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char map[
 
 void handle_input(KEY get_key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]);
 void sandworm_action(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], OBJECT_SAMPLE objects[MAX_OBJECTS]);
+void init_build_command_pos(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], BUILD_COMMAND* command[MAX_COMMANDS]);
+POSITION find_building_pos(KEY get_key, BUILD_COMMAND* command);
 void handle_command_input(KEY get_key, BUILD_COMMAND* command);
 
 void display(
@@ -69,12 +71,13 @@ void display(
 
 	sandworm_action(map, objects);
 
-	/*
-	POSITION building_idx_pos = find_building_pos(get_key, &command);
-	if (building_idx_pos.row != -1 && building_idx_pos.column != -1) {  // 유효한 명령어가 있을 때만 실행
+	init_build_command_pos(map, command);
+
+	POSITION building_idx_pos = find_building_pos(get_key, command);
+	if (building_idx_pos.row >= 0 && building_idx_pos.row < MAX_COMMANDS) {  // 유효한 명령어가 있을 때만 실행
 		handle_command_input(get_key, &command[building_idx_pos.row]);
 	}
-	*/
+	
 }
 
 void display_resource(RESOURCE resource) {
@@ -537,17 +540,17 @@ void update_sandworms(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 
 // 4) 유닛 1기 생산 - 단축키 목록
 BUILD_COMMAND command[] = {
-	{ 'B', 'H', 0, "Harvester", 0 },
-	{ 'B', 'S', 4, "Soldier", 1 },
-	{ 'S', 'F', 5, "Fremen", 1 },
-	{ 'A','F', 3, "Fighter", 2 },
-	{ 'F', 'T', 5, "Heavy Tank", 2 }
+	{ 'B', 'H', 0, "Harvester", 0, {-1, -1} },
+	{ 'B', 'S', 4, "Soldier", 1, {-1, -1} },
+	{ 'S', 'F', 5, "Fremen", 1, {-1, -1} },
+	{ 'A','F', 3, "Fighter", 2, {-1, -1} },
+	{ 'F', 'T', 5, "Heavy Tank", 2, {-1, -1} }
 };
 
 // 4) 유닛 1기 생산 - 위치 찾기 함수
-POSITION find_building_pos(KEY get_key, BUILD_COMMAND command[]) {
+POSITION find_building_pos(KEY get_key, BUILD_COMMAND* command) {
 	POSITION building_pos = { -1, -1 };
-	for (int i = 0; i < sizeof(command) / sizeof(command[0]); i++) {
+	for (int i = 0; i < MAX_COMMANDS; i++) {
 		if (command[i].command_k == get_key) {
 			building_pos.row = command[i].pos.row;
 			building_pos.column = command[i].pos.column;
@@ -558,7 +561,7 @@ POSITION find_building_pos(KEY get_key, BUILD_COMMAND command[]) {
 }
 
 // 4) 유닛 1기 생산 - 빈 공간 찾기 함수
-POSITION find_empty_pos(POSITION find_building_pos) {
+POSITION find_empty_pos(POSITION find_building_pos, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	POSITION empty_pos = { -1, -1 };
 
 	int dir[4][2] = { {0,1}, {1,0}, {0, -1}, {-1,0} };
@@ -576,6 +579,21 @@ POSITION find_empty_pos(POSITION find_building_pos) {
 	return empty_pos;
 }
 
+// 4) 유닛 1기 생산 - 생성될 건물 좌표 설정
+void init_build_command_pos(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], BUILD_COMMAND* command) {
+	for (int i = 0; i < MAX_COMMANDS; i++) {
+		for (int row = 0; row < MAP_HEIGHT; row++) {
+			for (int col = 0; col < MAP_WIDTH; col++) {
+				if (map[1][row][col] == command[i].command_k) {
+					command[i].pos.row = row;
+					command[i].pos.column = col;
+					break;
+				}
+			}
+		}
+	}
+}
+
 // 4) 유닛 1기 생산 - 유닛 생성
 void make_unit(KEY get_key, BUILD_COMMAND command[]) {
 	POSITION building_pos = { 0, 0 };
@@ -587,7 +605,7 @@ void make_unit(KEY get_key, BUILD_COMMAND command[]) {
 				return;
 			}
 
-			POSITION unit_pos = find_empty_pos(building_pos);
+			POSITION unit_pos = find_empty_pos(building_pos, map);
 			if (unit_pos.row == -1 && unit_pos.column == -1) {
 				display_system_message(message_pos, "No space for placing the unit.\n");
 				return;
