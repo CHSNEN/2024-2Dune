@@ -154,6 +154,8 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 		reset_color();
 		printf("\n");
 	}
+	memset(backbuf, 0, sizeof(backbuf));
+	memset(frontbuf, 0, sizeof(frontbuf));
 }
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력

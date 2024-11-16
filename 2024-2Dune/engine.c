@@ -38,7 +38,8 @@
 	 [4) 유닛 1기 생산] 및 [4) Bonus] 구현
 1111 [4) 유닛 1기 생산] 및 [4) Bonus] 구현 구체화
 	 전체적인 오류 개선
-1116 [4) 유닛 1기 생산] 오류 수정
+1115 [4) 유닛 1기 생산] 오류 수정
+1116 전체적인 오류 수정1
 */
 
 void init(void);
@@ -101,12 +102,20 @@ int main(void) {
 
 		// 샘플 오브젝트 동작
 		sample_obj_move();
+		if (cursor.current.row < 0 || cursor.current.row >= MAP_HEIGHT ||
+			cursor.current.column < 0 || cursor.current.column >= MAP_WIDTH) {
+			printf("Cursor out of bounds!\n");
+			fflush(stdout);
+			exit(1);
+		}
 
 		// 화면 출력
 		display(resource, map, cursor, objects, key);
 		Sleep(TICK);
 		sys_clock += 10;
 	}
+	system("pause");
+	return 0;
 }
 
 /* ================= subfunctions =================== */

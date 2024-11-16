@@ -17,6 +17,7 @@
 #define MAX_OBJECTS	100
 #define MAX_COMMANDS 5
 
+
 /* ================= 위치와 방향 =================== */
 // 맵에서 위치를 나타내는 구조체
 typedef struct {
