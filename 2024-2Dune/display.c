@@ -14,9 +14,16 @@ const POSITION resource_pos = { 0, 0 };
 const POSITION map_pos = { 1, 0 };
 const POSITION object_pos = { 0, MAP_WIDTH + 2 };
 
-
 char backbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
 char frontbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
+
+// 5) 시스템 메시지
+#define MAX_MESSAGES	10 
+#define MESSAGE_LENGTH	200 
+
+char system_messages[MAX_MESSAGES][MESSAGE_LENGTH] = { 0 }; 
+int current_message_count = 0;  
+
 
 void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP_WIDTH]);
 void display_resource(RESOURCE resource);
@@ -187,9 +194,23 @@ void display_cursor(CURSOR cursor) {
 	
 }
 
-// 1) 준비 - 시스템 메시지 표시 함수 + 초기 메시지
 char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
 
+// 5) 시스템 메시지 - 메시지 추가 함수
+void add_system_message(const char* new_message) {
+	if (current_message_count >= MAX_MESSAGES) {
+		for (int i = 1; i < MAX_MESSAGES; i++) {
+			strcpy_s(system_messages[i - 1], sizeof(system_messages[i - 1]), system_messages[i]);
+		}
+		current_message_count = MAX_MESSAGES - 1;
+	}
+
+	strcpy_s(system_messages[current_message_count], sizeof(system_messages[current_message_count]), new_message);
+	current_message_count++;
+}
+
+
+// 1) 준비 - 시스템 메시지 표시 함수 + 초기 메시지
 void display_system_message(POSITION message_pos, const char* system_message) {
 	gotoxy(message_pos);
 	static char last_message[200] = "";
@@ -207,6 +228,21 @@ void display_system_message(POSITION message_pos, const char* system_message) {
 		}
 		set_color(COLOR_DEFAULT);
 	}
+
+	// 5) 시스템 메시지 - 메시지 출력 기능 추가
+	for (int i = 0; i < MAX_MESSAGES; i++) {
+		gotoxy((POSITION) { message_pos.row + i, message_pos.column });
+		if (i < current_message_count) {
+			printf("%s", system_messages[i]);
+		}
+		else {
+			printf(" ");
+		}
+	}
+
+	add_system_message(system_message);
+
+	reset_color();
 }
 
 // 1) 준비 - 상태창 함수
