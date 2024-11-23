@@ -14,8 +14,8 @@ const POSITION resource_pos = { 0, 0 };
 const POSITION map_pos = { 1, 0 };
 const POSITION object_pos = { 0, MAP_WIDTH + 2 };
 
-char backbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
-char frontbuf[MAP_HEIGHT][MAP_WIDTH] = { 0 };
+char backbuf[MAP_HEIGHT][MAP_WIDTH] = { 0, 0 };
+char frontbuf[MAP_HEIGHT][MAP_WIDTH] = { 0, 0 };
 
 // 5) 시스템 메시지
 #define MAX_MESSAGES	10 
@@ -80,10 +80,10 @@ void display(
 
 	init_build_command_pos(map, command);
 
-	POSITION building_idx_pos = find_building_pos(get_key, command);
-	if (building_idx_pos.row >= 0 && building_idx_pos.row < MAX_COMMANDS) {  // 유효한 명령어가 있을 때만 실행
-		handle_command_input(get_key, &command[building_idx_pos.row]);
-	}
+	//POSITION building_idx_pos = find_building_pos(get_key, command);
+	//if (building_idx_pos.row >= 0 && building_idx_pos.row < MAX_COMMANDS) {  // 유효한 명령어가 있을 때만 실행
+		//handle_command_input(get_key, &command[building_idx_pos.row]);
+	//}
 	
 }
 
@@ -167,11 +167,13 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], int set_col_map[N_LAY
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력
 void display_cursor(CURSOR cursor) {
+	/*
 	gotoxy(map_pos);
 	set_color(COLOR_CURSOR);
 
 	POSITION prev = cursor.previous;
 	POSITION curr = cursor.current;
+	*/
 
 	/*
 	gotoxy(prev);
@@ -183,7 +185,7 @@ void display_cursor(CURSOR cursor) {
 	printf("%c", frontbuf[curr.row][curr.column]);
 	*/
 
-	
+	/*
 	gotoxy(prev);
 	char ch = frontbuf[prev.row][prev.column];
 	printc(padd(map_pos, prev), ch, COLOR_CURSOR);
@@ -191,7 +193,23 @@ void display_cursor(CURSOR cursor) {
 	gotoxy(curr);
 	ch = frontbuf[curr.row][curr.column];
 	printc(padd(map_pos, curr), ch, COLOR_CURSOR);
-	
+	*/
+
+	POSITION prev = cursor.previous;
+	POSITION curr = cursor.current;
+
+	// 이전 위치 복구
+	gotoxy(padd(map_pos, prev));
+	set_color(set_col_map[0][prev.row][prev.column]); // 이전 위치 색상 복원
+	printf("%c", frontbuf[prev.row][prev.column]);
+
+	// 현재 위치 출력
+	gotoxy(padd(map_pos, curr));
+	set_color(COLOR_CURSOR);  // 커서 색상 설정
+	printf(" ");  // 커서 위치 표시
+
+	reset_color();  // 색상 초기화
+
 }
 
 char system_message[200] = "Waiting for the command... "; // 초기 메시지를 임의로 설정
@@ -216,6 +234,7 @@ void display_system_message(POSITION message_pos, const char* system_message) {
 	static char last_message[200] = "";
 	static int line = 0;
 
+	// 5) 시스템 메시지 - 형식: 메시지 로그
 	if (strcmp(last_message, system_message) != 0) {
 		strcpy_s(last_message, sizeof(last_message), system_message);
 		gotoxy((POSITION) { message_pos.row + line, message_pos.column });
@@ -230,6 +249,7 @@ void display_system_message(POSITION message_pos, const char* system_message) {
 	}
 
 	// 5) 시스템 메시지 - 메시지 출력 기능 추가
+	/*
 	for (int i = 0; i < MAX_MESSAGES; i++) {
 		gotoxy((POSITION) { message_pos.row + i, message_pos.column });
 		if (i < current_message_count) {
@@ -241,7 +261,7 @@ void display_system_message(POSITION message_pos, const char* system_message) {
 	}
 
 	add_system_message(system_message);
-
+	*/
 	reset_color();
 }
 
@@ -530,6 +550,7 @@ void eat_unit(OBJECT_SAMPLE* sandworm) {
 				}
 				unit_count--;
 
+				// 5) 시스템 메시지
 				display_system_message(message_pos, "샌드웜이 유닛을 잡아먹었습니다!\n");
 				break;
 			}
@@ -543,6 +564,7 @@ void make_spice(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	map[1][spice_pos.row][spice_pos.column] = 'S';
 	current_spice++;
 
+	// 5) 시스템 메시지
 	display_system_message(message_pos, "샌드웜이 배설하여 스파이스 매장지가 생성되었습니다!\n");
 }
 
@@ -638,6 +660,7 @@ void make_unit(KEY get_key, BUILD_COMMAND command[]) {
 
 	for (int i = 0; i < i < sizeof(command) / sizeof(command[0]); i++) {
 		if (get_key == command->command_k) {
+			// 5) 시스템 메시지
 			if (building_pos.row == -1 && building_pos.column == -1) {
 				display_system_message(message_pos, "No space for placing the unit.\n");
 				return;
@@ -658,6 +681,7 @@ void make_unit(KEY get_key, BUILD_COMMAND command[]) {
 // 4) 유닛 1기 생산 - Bonus 유닛 생산 취소 함수
 void building_cancel() {
 	make_building_time = -1;
+	// 5) 시스템 메시지
 	display_system_message(message_pos, "The building has been canceled.\n");
 }
 
@@ -667,6 +691,7 @@ void handle_command_input(KEY get_key, BUILD_COMMAND* command) {
 	for (int i = 0; i < sizeof(command) / sizeof(command[0]); i++) {
 		if (command[i].command_k == get_key) {
 			if (current_spice < command[i].cost) {
+				// 5) 시스템 메시지
 				display_system_message(message_pos, "Not euogh spice.\n");
 				return;
 			}
@@ -678,6 +703,7 @@ void handle_command_input(KEY get_key, BUILD_COMMAND* command) {
 				make_unit(get_key, &command);
 			}
 			
+			// 5) 시스템 메시지
 			display_system_message(message_pos, "Production is ready.\n");
 			return;
 		}
@@ -686,5 +712,84 @@ void handle_command_input(KEY get_key, BUILD_COMMAND* command) {
 	// Bonus) 생산 취소
 	if (get_key == 'x') {
 		building_cancel();
+	}
+}
+
+// 6) 건설 - 커서 크기 조정 함수
+void cursor_size(CURSOR* cursor, int size) {
+	cursor->size = size; // size: 1 (1x1), 2 (2x2)
+}
+
+bool cursor_bounds(CURSOR cursor, int size) {
+	return (cursor.current.row + size - 1 < MAP_HEIGHT &&
+		cursor.current.column + size - 1 < MAP_WIDTH &&
+		cursor.current.row >= 0 && cursor.current.column >= 0);
+}
+
+// 6) 건설 - 건설 가능한 위치 확인
+bool can_build(CURSOR cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	for (int i = 0; i < cursor.size; i++) {
+		for (int j = 0; j < cursor.size; j++) {
+			int row = cursor.current.row + i;
+			int col = cursor.current.column + j;
+
+			if (map[1][row][col] != 'P') { 
+				return false; // 장판이 없으면 건설 불가능
+			}
+		}
+	}
+	return true;
+}
+
+// 6) 건설 - 건물 건설 함수
+void build_structure(CURSOR cursor, char structure, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	for (int i = 0; i < cursor.size; i++) {
+		for (int j = 0; j < cursor.size; j++) {
+			int row = cursor.current.row + i;
+			int col = cursor.current.column + j;
+
+			map[1][row][col] = structure;
+		}
+	}
+	display_system_message(message_pos, "Structure is built!\n");
+}
+
+// 6) 건설 - 건설 통합 처리 함수
+void handle_building(KEY key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	static bool in_build_mode = false;
+	static char selected_structure = '\0';
+
+	if (!in_build_mode && key == 'B') {
+		display_build_commands();
+		in_build_mode = true;
+		return;
+	}
+
+	if (in_build_mode) {
+		if (key == '1') { // Factory 선택
+			selected_structure = 'F';
+			set_cursor_size(cursor, 2);
+		}
+		else if (key == '2') { // Barracks 선택
+			selected_structure = 'B';
+			set_cursor_size(cursor, 2);
+		}
+		else if (key == k_esc) { // 취소
+			in_build_mode = false;
+			set_cursor_size(cursor, 1);
+			display_system_message(message_pos, "The building has been canceled.\n");
+			return;
+		}
+		else if (key == k_space) { // 건설 실행
+			if (can_build_at(*cursor, map)) {
+				build_structure(*cursor, selected_structure, map);
+				set_cursor_size(cursor, 1);
+				in_build_mode = false;
+			}
+			else {
+				display_system_message(message_pos, "The location cannot be built.\n");
+			}
+			return;
+		}
 	}
 }
