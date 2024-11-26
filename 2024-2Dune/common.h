@@ -16,6 +16,7 @@
 
 #define MAX_OBJECTS	100
 #define MAX_COMMANDS 5
+#define TOTAL_BUILDINGS 7
 
 
 /* ================= 위치와 방향 =================== */
@@ -105,7 +106,7 @@ extern char system_message[200];
 
 extern OBJECT_SAMPLE objects[MAX_OBJECTS];
 
-// 4) 유닛 1기 생산 - 유닛 생산용 구조체
+// 4) 유닛 1기 생산, 7) 유닛 목록 구현 - 유닛 생산용 구조체
 typedef struct {
 	char building;			// 건물 단축어
 	char command_k;			// 단축키
@@ -116,5 +117,16 @@ typedef struct {
 } BUILD_COMMAND;
 
 extern char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH];
+
+// 6) 건설, 7) 유닛 목록 구현 - 건물 건설 구조체
+typedef struct {
+	char name[20];      // 건물 이름
+	char type;          // 건물 유형
+	int cost;           // 건설 비용
+	int durability;     // 내구도
+	char command[20];   // 명령어
+	int size;			// 커서 사이즈(건물 사이즈)
+} BUILDING;
+
 
 #endif

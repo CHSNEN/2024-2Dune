@@ -598,7 +598,7 @@ void update_sandworms(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 	}
 }
 
-// 4) 유닛 1기 생산 - 단축키 목록
+// 4) 유닛 1기 생산, 7) 유닛 목록 구현 - 단축키 목록 초기화
 BUILD_COMMAND command[] = {
 	{ 'B', 'H', 0, "Harvester", 0, {-1, -1} },
 	{ 'B', 'S', 4, "Soldier", 1, {-1, -1} },
@@ -715,6 +715,19 @@ void handle_command_input(KEY get_key, BUILD_COMMAND* command) {
 	}
 }
 
+// 6) 건설 - 건물 목록 초기화
+BUILDING buildings[TOTAL_BUILDINGS] = {
+	{"Base", 'B', 0, 50, "H", 2},
+	{"Plate", 'P', 1, 0, "", 1},
+	{"Dormitory", 'D', 2, 10, "", 2},
+	{"Garage", 'G', 4, 10, "", 2},
+	{"Barracks", 'B', 4, 20, "S", 2},
+	{"Shelter", 'S', 5, 30, "F", 2},
+	{"Factory", 'F', 5, 30, "T", 2}
+};
+
+BUILDING selected_building = { "", ' ', 0, 0, "", 0};
+
 // 6) 건설 - 커서 크기 조정 함수
 void cursor_size(CURSOR* cursor, int size) {
 	cursor->size = size; // size: 1 (1x1), 2 (2x2)
@@ -760,36 +773,41 @@ void handle_building(KEY key, CURSOR* cursor, char map[N_LAYER][MAP_HEIGHT][MAP_
 	static char selected_structure = '\0';
 
 	if (!in_build_mode && key == 'B') {
-		display_build_commands();
 		in_build_mode = true;
 		return;
 	}
 
 	if (in_build_mode) {
-		if (key == '1') { // Factory 선택
-			selected_structure = 'F';
-			set_cursor_size(cursor, 2);
+		for (int i = 0; i < TOTAL_BUILDINGS; i++) {
+			if (key == buildings[i].type) {
+				selected_building = buildings[i];
+				cursor_size(cursor, 2);
+				char message[50];
+				snprintf(message, sizeof(message), "Selected: %s. Move cursor to build.", buildings[i].name);
+				display_system_message(message_pos, message);
+				return;
+			}
 		}
-		else if (key == '2') { // Barracks 선택
-			selected_structure = 'B';
-			set_cursor_size(cursor, 2);
-		}
-		else if (key == k_esc) { // 취소
+		if (key == k_esc) {
 			in_build_mode = false;
-			set_cursor_size(cursor, 1);
-			display_system_message(message_pos, "The building has been canceled.\n");
-			return;
+			display_system_message(message_pos, "Build mode canceled.");
 		}
-		else if (key == k_space) { // 건설 실행
-			if (can_build_at(*cursor, map)) {
-				build_structure(*cursor, selected_structure, map);
-				set_cursor_size(cursor, 1);
-				in_build_mode = false;
-			}
-			else {
-				display_system_message(message_pos, "The location cannot be built.\n");
-			}
-			return;
+		else if (key == k_space) {
+			build_structure(*cursor, selected_building.type, map);
+			in_build_mode = false;
 		}
 	}
 }
+
+// 6) 건설 - 건물 배치 제한
+bool can_build_at(CURSOR cursor, char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
+	for (int i = 0; i < cursor.size; i++) {
+		for (int j = 0; j < cursor.size; j++) {
+			if (map[0][cursor.current.row + i][cursor.current.column + j] != 'P') {
+				return false; // 장판 위가 아니면 건설 불가
+			}
+		}
+	}
+	return true;
+}
+
