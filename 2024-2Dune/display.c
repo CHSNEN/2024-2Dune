@@ -642,15 +642,11 @@ POSITION find_empty_pos(POSITION find_building_pos, char map[N_LAYER][MAP_HEIGHT
 // 4) 유닛 1기 생산 - 생성될 건물 좌표 설정
 void init_build_command_pos(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH], BUILD_COMMAND* command) {
 	for (int i = 0; i < MAX_COMMANDS; i++) {
-		// 초기화
-		command[i].pos.row = -1;
-		command[i].pos.column = -1;
-		
-		for (int row = 0; row < MAP_HEIGHT; row++) {
-			for (int col = 0; col < MAP_WIDTH; col++) {
-				if (strncmp(&map[1][row][col], command[i].command_k, 1) == 0) {
-					command[i].pos.row = row;
-					command[i].pos.column = col;
+		for (int r = 0; r < MAP_HEIGHT; r++) {
+			for (int c = 0; c < MAP_WIDTH; c++) {
+				if (strncmp(&map[1][r][c], command[i].command_k, 1) == 0) {
+					command[i].pos.row = r;
+					command[i].pos.column = c;
 					break;
 				}
 			}
